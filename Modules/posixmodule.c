@@ -33,6 +33,12 @@
 #include "winreparse.h"
 #endif
 
+// [IGE]: FileIO
+#ifdef USE_IGE
+#include "pyxieFile.h"
+#endif
+// [/IGE]
+
 /* On android API level 21, 'AT_EACCESS' is not declared although
  * HAVE_FACCESSAT is defined. */
 #ifdef __ANDROID__
@@ -200,6 +206,14 @@ corresponding Unix manual entries for more information on calls.");
 module os
 [clinic start generated code]*/
 /*[clinic end generated code: output=da39a3ee5e6b4b0d input=94a0f0f978acae17]*/
+
+// [IGE]: FileIO
+#ifdef USE_IGE
+#if defined(__IOS__)
+#undef HAVE_SYSTEM
+#endif
+#endif
+    // [/IGE]
 
 #ifndef _MSC_VER
 
@@ -2145,6 +2159,18 @@ posix_do_stat(const char *function_name, path_t *path,
 #endif /* HAVE_FSTATAT */
         result = STAT(path->narrow, &st);
 #endif /* MS_WINDOWS */
+
+    // [IGE]: FileIO
+    #ifdef USE_IGE
+        if (result)
+        { //pyxie
+            struct stat statbuf;
+            result = pyxieStatFromPathW(path->narrow ? path->narrow : path->wide, &statbuf);
+            StatCpy((&st), statbuf);
+        }
+    #endif
+    // [/IGE]
+
     Py_END_ALLOW_THREADS
 
     if (result != 0) {
@@ -3506,7 +3532,19 @@ _listdir_windows_no_opendir(path_t *path, PyObject *list)
         /* Skip over . and .. */
         if (wcscmp(wFileData.cFileName, L".") != 0 &&
             wcscmp(wFileData.cFileName, L"..") != 0) {
-            v = PyUnicode_FromWideChar(wFileData.cFileName,
+
+            // [IGE]: FileIO
+            #ifdef USE_IGE
+                WCHAR ext[MAX_PATH]; //pyxie
+                _wsplitpath(wFileData.cFileName, NULL, NULL, NULL, ext);
+                if (wcscmp(ext, L".pyxd") == 0)
+                {
+                    wFileData.cFileName[wcslen(wFileData.cFileName) - 5] = 0;
+                }
+            #endif
+            // [IGE]: FileIO
+
+                v = PyUnicode_FromWideChar(wFileData.cFileName,
                                        wcslen(wFileData.cFileName));
             if (path->narrow && v) {
                 Py_SETREF(v, PyUnicode_EncodeFSDefault(v));
@@ -3628,6 +3666,17 @@ _posix_listdir(path_t *path, PyObject *list)
             (NAMLEN(ep) == 1 ||
              (ep->d_name[1] == '.' && NAMLEN(ep) == 2)))
             continue;
+
+    // [IGE]: FileIO
+    #ifdef USE_IGE
+        char *ext = strrchr(ep->d_name, '.'); //pyxie
+        if (ext && (strcmp(ext, ".pyxd") == 0))
+        {
+            ep->d_name[strlen(ep->d_name) - 5] = 0;
+        }
+    #endif
+    // [/IGE]
+
         if (return_str)
             v = PyUnicode_DecodeFSDefaultAndSize(ep->d_name, NAMLEN(ep));
         else
@@ -3685,11 +3734,29 @@ static PyObject *
 os_listdir_impl(PyObject *module, path_t *path)
 /*[clinic end generated code: output=293045673fcd1a75 input=e3f58030f538295d]*/
 {
+// [IGE]: FileIO
+    PyObject *list;
 #if defined(MS_WINDOWS) && !defined(HAVE_OPENDIR)
-    return _listdir_windows_no_opendir(path, NULL);
+    list = _listdir_windows_no_opendir(path, NULL);
 #else
-    return _posix_listdir(path, NULL);
+    list = _posix_listdir(path, NULL);
 #endif
+
+#ifdef USE_IGE
+    if (!list)
+    {
+    #ifdef MS_WINDOWS
+        list = pyxieListDirW(path->wide, NULL);
+    #else
+        list = pyxieListDirW(path->narrow, NULL);
+    #endif
+        if (list)
+            PyErr_Clear();
+    }
+#endif
+
+    return list;
+// [/IGE]
 }
 
 #ifdef MS_WINDOWS
@@ -6002,7 +6069,7 @@ os_openpty_impl(PyObject *module)
     if (_Py_set_inheritable(master_fd, 0, NULL) < 0)
         goto posix_error;
 
-#if !defined(__CYGWIN__) && !defined(__ANDROID__) && !defined(HAVE_DEV_PTC)
+#if !defined(__CYGWIN__) && !defined(__ANDROID__) && !defined(HAVE_DEV_PTC) && !defined(__IOS__) // [IGE]
     ioctl(slave_fd, I_PUSH, "ptem"); /* push ptem */
     ioctl(slave_fd, I_PUSH, "ldterm"); /* push ldterm */
 #ifndef __hpux
@@ -12159,6 +12226,16 @@ ScandirIterator_closedir(ScandirIterator *iterator)
         return;
 
     iterator->handle = INVALID_HANDLE_VALUE;
+
+// [IGE]: FileIO
+#ifdef USE_IGE
+    if (handle < 16) {
+        pyxieScanDirClose(handle);
+        return;
+    }
+#endif
+// [/IGE]
+
     Py_BEGIN_ALLOW_THREADS
     FindClose(handle);
     Py_END_ALLOW_THREADS
@@ -12175,31 +12252,58 @@ ScandirIterator_iternext(ScandirIterator *iterator)
     if (iterator->handle == INVALID_HANDLE_VALUE)
         return NULL;
 
-    while (1) {
-        if (!iterator->first_time) {
-            Py_BEGIN_ALLOW_THREADS
-            success = FindNextFileW(iterator->handle, file_data);
-            Py_END_ALLOW_THREADS
-            if (!success) {
-                /* Error or no more files */
-                if (GetLastError() != ERROR_NO_MORE_FILES)
-                    path_error(&iterator->path);
-                break;
-            }
-        }
-        iterator->first_time = 0;
+// [IGE]: FileIO
+#ifdef USE_IGE
+    if (iterator->handle < 16)
+    {
+        entry = PyObject_New(DirEntry, &DirEntryType);
+        if (!entry)
+            return NULL;
 
-        /* Skip over . and .. */
-        if (wcscmp(file_data->cFileName, L".") != 0 &&
-            wcscmp(file_data->cFileName, L"..") != 0) {
-            entry = DirEntry_from_find_data(&iterator->path, file_data);
-            if (!entry)
-                break;
+        struct stat statbuf;
+        ((DirEntry *)entry)->name = NULL;
+        ((DirEntry *)entry)->path = NULL;
+        ((DirEntry *)entry)->stat = NULL;
+        ((DirEntry *)entry)->lstat = NULL;
+        ((DirEntry *)entry)->got_file_index = 0;
+
+        if (pyxieScanDirItrNext(iterator->handle, &((DirEntry *)entry)->name, &((DirEntry *)entry)->path, &statbuf) == 0)
+        {
+            StatCpy((&(((DirEntry *)entry)->win32_lstat)), statbuf);
             return entry;
         }
-
-        /* Loop till we get a non-dot directory or finish iterating */
+        Py_DECREF(entry);
     }
+    else
+#endif
+    {
+        while (1) {
+            if (!iterator->first_time) {
+                Py_BEGIN_ALLOW_THREADS
+                success = FindNextFileW(iterator->handle, file_data);
+                Py_END_ALLOW_THREADS
+                if (!success) {
+                    /* Error or no more files */
+                    if (GetLastError() != ERROR_NO_MORE_FILES)
+                        path_error(&iterator->path);
+                    break;
+                }
+            }
+            iterator->first_time = 0;
+
+            /* Skip over . and .. */
+            if (wcscmp(file_data->cFileName, L".") != 0 &&
+                wcscmp(file_data->cFileName, L"..") != 0) {
+                entry = DirEntry_from_find_data(&iterator->path, file_data);
+                if (!entry)
+                    break;
+                return entry;
+            }
+
+            /* Loop till we get a non-dot directory or finish iterating */
+        }
+    }
+// [/IGE]
 
     /* Error or no more files */
     ScandirIterator_closedir(iterator);
@@ -12217,6 +12321,17 @@ ScandirIterator_is_closed(ScandirIterator *iterator)
 static void
 ScandirIterator_closedir(ScandirIterator *iterator)
 {
+// [IGE]: FileIO
+#ifdef USE_IGE
+    if (iterator->dirp < 16)
+    {
+        pyxieClose(iterator->dirp);
+        iterator->dirp = NULL;
+        return;
+    }
+#endif
+// [/IGE]
+
     DIR *dirp = iterator->dirp;
 
     if (!dirp)
@@ -12245,37 +12360,61 @@ ScandirIterator_iternext(ScandirIterator *iterator)
     if (!iterator->dirp)
         return NULL;
 
-    while (1) {
-        errno = 0;
-        Py_BEGIN_ALLOW_THREADS
-        direntp = readdir(iterator->dirp);
-        Py_END_ALLOW_THREADS
+// [IGE]: FileIO
+#ifdef USE_IGE
+    if ((void *)iterator->dirp < (void *)16)
+    {
+        entry = (PyObject *)PyObject_New(DirEntry, &DirEntryType);
+        if (!entry)
+            return NULL;
 
-        if (!direntp) {
-            /* Error or no more files */
-            if (errno != 0)
-                path_error(&iterator->path);
-            break;
-        }
+        ((DirEntry *)entry)->name = NULL;
+        ((DirEntry *)entry)->path = NULL;
+        ((DirEntry *)entry)->stat = NULL;
+        ((DirEntry *)entry)->lstat = NULL;
 
-        /* Skip over . and .. */
-        name_len = NAMLEN(direntp);
-        is_dot = direntp->d_name[0] == '.' &&
-                 (name_len == 1 || (direntp->d_name[1] == '.' && name_len == 2));
-        if (!is_dot) {
-            entry = DirEntry_from_posix_info(&iterator->path, direntp->d_name,
-                                            name_len, direntp->d_ino
-#ifdef HAVE_DIRENT_D_TYPE
-                                            , direntp->d_type
-#endif
-                                            );
-            if (!entry)
-                break;
+        if (pyxieScanDirItrNext((int)iterator->dirp, &((DirEntry *)entry)->name, &((DirEntry *)entry)->path, NULL) == 0)
+        {
             return entry;
         }
-
-        /* Loop till we get a non-dot directory or finish iterating */
+        Py_DECREF(entry);
     }
+    else
+#endif
+    {
+        while (1) {
+            errno = 0;
+            Py_BEGIN_ALLOW_THREADS
+            direntp = readdir(iterator->dirp);
+            Py_END_ALLOW_THREADS
+
+            if (!direntp) {
+                /* Error or no more files */
+                if (errno != 0)
+                    path_error(&iterator->path);
+                break;
+            }
+
+            /* Skip over . and .. */
+            name_len = NAMLEN(direntp);
+            is_dot = direntp->d_name[0] == '.' &&
+                     (name_len == 1 || (direntp->d_name[1] == '.' && name_len == 2));
+            if (!is_dot) {
+                entry = DirEntry_from_posix_info(&iterator->path, direntp->d_name,
+                                                name_len, direntp->d_ino
+    #ifdef HAVE_DIRENT_D_TYPE
+                                                , direntp->d_type
+    #endif
+                                                );
+                if (!entry)
+                    break;
+                return entry;
+            }
+
+            /* Loop till we get a non-dot directory or finish iterating */
+        }
+    }
+// [/IGE]
 
     /* Error or no more files */
     ScandirIterator_closedir(iterator);
@@ -12284,7 +12423,7 @@ ScandirIterator_iternext(ScandirIterator *iterator)
 
 #endif
 
-static PyObject *
+    static PyObject *
 ScandirIterator_close(ScandirIterator *self, PyObject *args)
 {
     ScandirIterator_closedir(self);
@@ -12456,6 +12595,15 @@ os_scandir_impl(PyObject *module, path_t *path)
 
     PyMem_Free(path_strW);
 
+// [IGE]: FileIO
+#ifdef USE_IGE
+    if (iterator->handle == INVALID_HANDLE_VALUE)
+    {
+        iterator->handle = pyxieScanDirw(iterator->path.wide);
+    }
+#endif
+// [/IGE]
+    
     if (iterator->handle == INVALID_HANDLE_VALUE) {
         path_error(&iterator->path);
         goto error;
@@ -12485,6 +12633,13 @@ os_scandir_impl(PyObject *module, path_t *path)
         iterator->dirp = opendir(path_str);
         Py_END_ALLOW_THREADS
     }
+
+// [IGE]: FileIO
+#ifdef USE_IGE
+    if (!iterator->dirp)
+        iterator->dirp = pyxieScanDirw(path_str);
+#endif
+// [/IGE]
 
     if (!iterator->dirp) {
         path_error(&iterator->path);

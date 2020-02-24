@@ -1,0 +1,452 @@
+cmake_minimum_required(VERSION 2.8.12)
+
+project(Python)
+
+set(PYTHON_LIB Python37)
+set (PYTHON_INCLUDE_DIRS "Include")
+
+if (MSVC)
+    list(APPEND PYTHON_INCLUDE_DIRS "PC")
+elseif (OSX)
+    list(APPEND PYTHON_INCLUDE_DIRS "Mac")
+elseif (ANDROID)
+    list(APPEND PYTHON_INCLUDE_DIRS "Android")
+elseif (IOS)
+    list(APPEND PYTHON_INCLUDE_DIRS "IOS")
+endif ()
+
+# Force static runtime libraries
+if(MSVC)
+  set(CompilerFlags
+        CMAKE_CXX_FLAGS
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_MINSIZEREL
+        CMAKE_CXX_FLAGS_RELWITHDEBINFO
+        CMAKE_C_FLAGS
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+        CMAKE_C_FLAGS_MINSIZEREL
+        CMAKE_C_FLAGS_RELWITHDEBINFO
+        )
+  foreach(CompilerFlag ${CompilerFlags})
+      string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+      set(${CompilerFlag} "${${CompilerFlag}}" CACHE STRING "msvc compiler flags" FORCE)
+      message("MSVC flags: ${CompilerFlag}:${${CompilerFlag}}")
+  endforeach()
+endif()
+
+set (CTYPES_SOURCE
+	Modules/_ctypes/_ctypes.c
+	Modules/_ctypes/_ctypes_test.c
+	Modules/_ctypes/callbacks.c
+	Modules/_ctypes/callproc.c
+	Modules/_ctypes/cfield.c
+	Modules/_ctypes/malloc_closure.c
+	Modules/_ctypes/stgdict.c	
+)
+
+add_library(_ctypes STATIC ${PYTHON_INCLUDE_DIRS} ${CTYPES_SOURCE})
+target_include_directories(_ctypes PRIVATE ${PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ctypes)
+
+if (MSVC)
+    target_include_directories(_ctypes PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ctypes/libffi_msvc)
+elseif (OSX)
+    target_include_directories(_ctypes PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ctypes/libffi_osx)
+else()
+    target_include_directories(_ctypes PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ctypes/libffi_dummy)
+endif()
+
+add_library(pyexpat STATIC Modules/pyexpat.c
+${CMAKE_CURRENT_SOURCE_DIR}/Modules/expat/xmlparse.c
+${CMAKE_CURRENT_SOURCE_DIR}/Modules/expat/xmlrole.c
+${CMAKE_CURRENT_SOURCE_DIR}/Modules/expat/xmltok.c
+${CMAKE_CURRENT_SOURCE_DIR}/Modules/expat/xmltok_impl.c
+${CMAKE_CURRENT_SOURCE_DIR}/Modules/expat/xmltok_ns.c
+)
+target_compile_definitions(pyexpat PUBLIC HAVE_EXPAT_CONFIG_H=1)
+target_include_directories(pyexpat PRIVATE ${PYTHON_INCLUDE_DIRS}  ${CMAKE_CURRENT_SOURCE_DIR}/Modules/expat)
+
+
+add_library(unicodedata STATIC Modules/unicodedata.c)
+target_include_directories(unicodedata PRIVATE ${PYTHON_INCLUDE_DIRS})
+
+add_library(select STATIC Modules/selectmodule.c)
+target_include_directories(select PRIVATE ${PYTHON_INCLUDE_DIRS})
+
+add_library(_socket STATIC Modules/socketmodule.c)
+target_include_directories(_socket PRIVATE ${PYTHON_INCLUDE_DIRS})
+
+add_library(_asyncio STATIC Modules/_asynciomodule.c)
+target_include_directories(_asyncio PRIVATE ${PYTHON_INCLUDE_DIRS})
+
+add_library(_queue STATIC Modules/_queuemodule.c)
+target_include_directories(_queue PRIVATE ${PYTHON_INCLUDE_DIRS})
+
+# add_library(zlibmodule STATIC Modules/zlibmodule.c)
+# target_include_directories(zlibmodule PRIVATE ${PYTHON_INCLUDE_DIRS} ${PIXYE_ROOT}/lib/ThirdParty/zlib)
+
+
+# add_library(stb STATIC ${PIXYE_ROOT}/lib/ThirdParty/stb/stb_image.cpp ${PIXYE_ROOT}/lib/ThirdParty/stb/stb_image_write.cpp)
+# target_include_directories(stb PRIVATE ${PIXYE_ROOT}/lib/ThirdParty/stb)
+
+
+# add_subdirectory(${PIXYE_ROOT}/lib/ThirdParty/sqlite ${CMAKE_BINARY_DIR}/sqlite)
+
+# IF(MSVC)
+# set(ZLIB_LIBRARY zlib)
+# add_subdirectory(${PIXYE_ROOT}/lib/ThirdParty/zlib ${CMAKE_BINARY_DIR}/zlib)
+# ENDIF()
+
+# add_subdirectory(${PIXYE_ROOT}/lib/ThirdParty/imgui-1.0.0 ${CMAKE_BINARY_DIR}/imgui)
+
+# add_subdirectory(${PIXYE_ROOT}/lib/ThirdParty/box2d-py-2.3.8 ${CMAKE_BINARY_DIR}/Box2D)
+
+# add_subdirectory(${PIXYE_ROOT}/lib/ThirdParty/numpy ${CMAKE_BINARY_DIR}/numpy)
+
+# add_subdirectory(${PIXYE_ROOT}/lib/ThirdParty/opencv ${CMAKE_BINARY_DIR}/opencv)
+
+# add_subdirectory(${PIXYE_ROOT}/lib/ThirdParty/dlib/tools/python ${CMAKE_BINARY_DIR}/dlib_python)
+
+# add_subdirectory(${PIXYE_ROOT}/module/igeNanoGUI ${CMAKE_BINARY_DIR}/igeNanoGUI)
+
+# add_library(_sqlite STATIC
+		# Modules/_sqlite/cache.c
+		# Modules/_sqlite/connection.c
+		# Modules/_sqlite/cursor.c
+		# Modules/_sqlite/microprotocols.c
+		# Modules/_sqlite/module.c
+		# Modules/_sqlite/prepare_protocol.c
+		# Modules/_sqlite/row.c
+		# Modules/_sqlite/statement.c
+		# Modules/_sqlite/util.c
+# )
+# target_include_directories(_sqlite PRIVATE ${PYTHON_INCLUDE_DIRS} ${PIXYE_ROOT}/lib/ThirdParty/sqlite)
+# target_link_libraries(_sqlite sqlite3)
+# target_compile_definitions(_sqlite PRIVATE MODULE_NAME="sqlite3" )
+
+
+# IF(MSVC)
+	# set(sslsrc Modules/_ssl.c ${PIXYE_ROOT}/lib/ThirdParty/openssl/win64/applink.c)
+	# set(ssllib 
+		# ${PIXYE_ROOT}/lib/ThirdParty/openssl/win64d/libcrypto.lib
+		# ${PIXYE_ROOT}/lib/ThirdParty/openssl/win64d/libssl.lib)
+# ELSEIF(Linux)
+# ELSEIF(OSX)
+	# set(sslsrc Modules/_ssl.c)
+	# set(ssllib 
+		# ${PIXYE_ROOT}/lib/ThirdParty/openssl/osx64/libcrypto.a
+		# ${PIXYE_ROOT}/lib/ThirdParty/openssl/osx64/libssl.a)
+# ELSEIF(IOS)
+	# set(sslsrc Modules/_ssl.c)
+	# set(ssllib 
+		# ${PIXYE_ROOT}/lib/ThirdParty/openssl/ios/libcrypto.a
+		# ${PIXYE_ROOT}/lib/ThirdParty/openssl/ios/libssl.a)
+# ELSEIF(Android)
+	# set(sslsrc Modules/_ssl.c)
+	# set(ssllib
+		# ${PIXYE_ROOT}/lib/ThirdParty/openssl/android/${ANDROID_ABI}/libssl.a
+		# ${PIXYE_ROOT}/lib/ThirdParty/openssl/android/${ANDROID_ABI}/libcrypto.a)
+# ENDIF()
+# add_library(_ssl STATIC ${sslsrc})
+# target_include_directories(_ssl PRIVATE ${PYTHON_INCLUDE_DIRS} ${PIXYE_ROOT}/lib/ThirdParty/openssl/include)
+
+
+# set(cv2_src ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/python/src2/cv2.cpp)
+# add_library(_cv2 STATIC ${cv2_src})
+# target_include_directories(_cv2 PRIVATE 
+	# ${CMAKE_BINARY_DIR}
+	# ${PYTHON_INCLUDE_DIRS} 
+	# ${PIXYE_ROOT}/lib/ThirdParty/numpy/gen/numpy/core/include
+	# ${PIXYE_ROOT}/lib/ThirdParty/numpy/gen/numpy/core/include/numpy
+	# ${PIXYE_ROOT}/lib/ThirdParty/numpy/numpy/core/include
+	# ${PIXYE_ROOT}/lib/ThirdParty/numpy/numpy/core/include/numpy
+	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/build/modules/python_bindings_generator
+	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/include
+	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/core/include
+	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/flann/include
+	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/imgproc/include
+	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/ml/include
+	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/photo/include
+	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/dnn/include
+	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/features2d/include
+	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/imgcodecs/include
+	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/videoio/include
+	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/calib3d/include
+	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/highgui/include
+	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/objdetect/include
+	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/stitching/include
+	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/video/include
+	# )
+# target_link_libraries(_cv2 	opencv_calib3d opencv_core opencv_dnn opencv_features2d
+							# opencv_flann opencv_highgui opencv_imgcodecs opencv_imgproc
+							# opencv_ml opencv_objdetect opencv_photo opencv_stitching
+							# opencv_video opencv_videoio)
+# if (MSVC)
+    # target_compile_options(_cv2 PRIVATE /bigobj)
+# endif()
+
+IF(MSVC)
+	set(SOURCES
+			PC/config.c
+			PC/getpathp.c
+			PC/invalid_parameter_handler.c
+			PC/msvcrtmodule.c
+			PC/winreg.c
+            Python/dynload_win.c
+			Modules/_winapi.c
+			Modules/_io/winconsoleio.c
+			)
+	set (INCLUDES
+			PC
+	)
+ELSEIF(Linux)
+ELSEIF(OSX)
+	set(SOURCES
+			Mac/config.c
+			Python/dynload_shlib.c
+			Python/frozenmain.c
+			Modules/getpath.c
+			Modules/pwdmodule.c
+			Parser/pgen.c
+			Modules/_posixsubprocess.c
+			)
+ELSEIF(IOS)
+	set(SOURCES
+			IOS/config.c
+			Python/dynload_shlib.c
+			Modules/getpath.c
+			Modules/pwdmodule.c
+			Modules/_posixsubprocess.c
+			)
+ELSEIF(Android)
+	set(SOURCES
+			Android/config.c
+			#Android/getpathp.c
+			Python/dynload_shlib.c
+			Modules/getpath.c
+			Modules/pwdmodule.c
+			Modules/_posixsubprocess.c
+			Modules/_contextvarsmodule.c
+			)
+ENDIF()
+
+set(SOURCES ${SOURCES}
+	Modules/posixmodule.c
+	Modules/errnomodule.c
+	Modules/_sre.c
+	Modules/_codecsmodule.c
+	Modules/_weakref.c
+	Modules/_functoolsmodule.c
+	Modules/_operator.c
+	Modules/_collectionsmodule.c
+	Modules/_abc.c
+	Modules/itertoolsmodule.c
+	Modules/atexitmodule.c
+	Modules/signalmodule.c
+	Modules/_stat.c
+	Modules/timemodule.c
+	Modules/_threadmodule.c
+	Modules/_localemodule.c
+	Modules/_io/_iomodule.c
+	Modules/_io/iobase.c
+	Modules/_io/fileio.c
+	Modules/_io/bufferedio.c
+	Modules/_io/textio.c
+	Modules/_io/bytesio.c
+	Modules/_io/stringio.c
+	Modules/zipimport.c
+	Modules/faulthandler.c
+	Modules/_tracemalloc.c
+	Modules/symtablemodule.c
+	Modules/xxsubtype.c
+	Modules/gcmodule.c
+	Modules/getbuildinfo.c
+	Modules/main.c
+	Modules/hashtable.c
+	Modules/_struct.c
+	Modules/binascii.c
+	Modules/cmathmodule.c
+	Modules/_bisectmodule.c
+	Modules/_blake2/blake2module.c
+	Modules/_blake2/blake2b_impl.c
+	Modules/_blake2/blake2s_impl.c
+	Modules/_contextvarsmodule.c
+	Modules/_csv.c
+	Modules/_heapqmodule.c
+	Modules/_json.c
+	Modules/_lsprof.c
+	Modules/_math.c
+	Modules/_pickle.c
+	Modules/_randommodule.c
+	Modules/_sha3/sha3module.c
+	Modules/arraymodule.c
+	Modules/audioop.c
+	Modules/_datetimemodule.c
+	Modules/mathmodule.c
+	Modules/md5module.c
+	Modules/mmapmodule.c
+	Modules/_opcode.c
+	Modules/parsermodule.c
+	Modules/rotatingtree.c
+	Modules/sha1module.c
+	Modules/sha256module.c
+	Modules/sha512module.c
+	Modules/cjkcodecs/_codecs_cn.c
+	Modules/cjkcodecs/_codecs_hk.c
+	Modules/cjkcodecs/_codecs_iso2022.c
+	Modules/cjkcodecs/_codecs_jp.c
+	Modules/cjkcodecs/_codecs_kr.c
+	Modules/cjkcodecs/_codecs_tw.c
+	Modules/cjkcodecs/multibytecodec.c
+
+	Objects/abstract.c
+	Objects/accu.c
+	Objects/boolobject.c
+	Objects/bytearrayobject.c
+	Objects/bytes_methods.c
+	Objects/bytesobject.c
+	Objects/call.c
+	Objects/capsule.c
+	Objects/cellobject.c
+	Objects/classobject.c
+	Objects/codeobject.c
+	Objects/complexobject.c
+	Objects/descrobject.c
+	Objects/dictobject.c
+	Objects/enumobject.c
+	Objects/exceptions.c
+	Objects/fileobject.c
+	Objects/floatobject.c
+	Objects/frameobject.c
+	Objects/funcobject.c
+	Objects/genobject.c
+	Objects/iterobject.c
+	Objects/listobject.c
+	Objects/longobject.c
+	Objects/memoryobject.c
+	Objects/methodobject.c
+	Objects/moduleobject.c
+	Objects/namespaceobject.c
+	Objects/object.c
+	Objects/obmalloc.c
+	Objects/odictobject.c
+	Objects/rangeobject.c
+	Objects/setobject.c
+	Objects/sliceobject.c
+	Objects/structseq.c
+	Objects/tupleobject.c
+	Objects/typeobject.c
+	Objects/unicodectype.c
+	Objects/unicodeobject.c
+	Objects/weakrefobject.c
+
+	Parser/acceler.c
+	Parser/bitset.c
+	Parser/firstsets.c
+	Parser/grammar.c
+	Parser/grammar1.c
+	Parser/listnode.c
+	Parser/metagrammar.c
+	Parser/myreadline.c
+	Parser/node.c
+	Parser/parser.c
+	Parser/parsetok.c
+	Parser/tokenizer.c
+
+	Python/pyhash.c
+	Python/_warnings.c
+	Python/asdl.c
+	Python/ast.c
+	Python/ast_opt.c
+	Python/ast_unparse.c
+	Python/bltinmodule.c
+	Python/bootstrap_hash.c
+	Python/ceval.c
+	Python/codecs.c
+	Python/compile.c
+	Python/context.c
+	Python/dynamic_annotations.c
+	Python/errors.c
+	Python/fileutils.c
+	Python/formatter_unicode.c
+	Python/future.c
+	Python/getargs.c
+	Python/getcompiler.c
+	Python/getcopyright.c
+	Python/getopt.c
+	Python/getplatform.c
+	Python/getversion.c
+	Python/graminit.c
+	Python/hamt.c
+	Python/import.c
+	Python/importdl.c
+	Python/marshal.c
+	Python/modsupport.c
+	Python/mysnprintf.c
+	Python/mystrtoul.c
+	Python/pathconfig.c
+	Python/peephole.c
+	Python/pyarena.c
+	Python/pyctype.c
+	Python/pyfpe.c
+	Python/pylifecycle.c
+	Python/pymath.c
+	Python/pytime.c
+	Python/pystate.c
+	Python/pystrcmp.c
+	Python/pystrhex.c
+	Python/pystrtod.c
+	Python/dtoa.c
+	Python/Python-ast.c
+	Python/pythonrun.c
+	Python/structmember.c
+	Python/symtable.c
+	Python/sysmodule.c
+	Python/thread.c
+	Python/traceback.c
+	Python/frozen.c
+	builtin.c
+)
+
+add_library(${PYTHON_LIB} STATIC ${SOURCES})
+
+set(DEFINITIONS Py_BUILD_CORE Py_NO_ENABLE_SHARED PYXIE_SKIP_GIL_CHECK)
+if(WIN32)
+	if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+		target_compile_definitions(${PYTHON_LIB} PUBLIC _AMD64_)
+	else()
+		target_compile_definitions(${PYTHON_LIB} PUBLIC _X86_)
+	endif()
+target_link_libraries(${PYTHON_LIB} Version shlwapi ws2_32)
+endif()
+
+target_include_directories(${PYTHON_LIB} PUBLIC 
+	${PIXYE_ROOT}/lib/pyxcore
+	${PIXYE_ROOT}/module/igeCore
+	${PYTHON_INCLUDE_DIRS}
+	${PIXYE_ROOT}/lib/ThirdParty/gzip
+	${INCLUDES}
+)
+target_compile_definitions(${PYTHON_LIB} PUBLIC ${DEFINITIONS})
+
+target_link_libraries(${PYTHON_LIB} 
+# _ssl ${ssllib} 
+# _Box2D 
+# imguicore 
+# zlibmodule 
+# unicodedata 
+# pyexpat
+# select 
+# _queue 
+# _socket 
+# _sqlite 
+# _asyncio  
+# ${ZLIB_LIBRARY}
+# _ctypes
+# numpy
+# stb
+# _cv2
+# dlib_python
+# nanogui-python
+)

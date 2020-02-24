@@ -33,6 +33,10 @@ extern struct _inittab _PyImport_Inittab[];
 struct _inittab *PyImport_Inittab = _PyImport_Inittab;
 static struct _inittab *inittab_copy = NULL;
 
+// [IGE]: Builtin Modules
+PyObject* FindBuildtinModule(PyObject* abs_name);
+// [/IGE]
+
 /*[clinic input]
 module _imp
 [clinic start generated code]*/
@@ -1758,9 +1762,19 @@ PyImport_ImportModuleLevelObject(PyObject *name, PyObject *globals,
     else {
         Py_XDECREF(mod);
         mod = import_find_and_load(abs_name);
+
+    // [IGE]: Builtin Modules
         if (mod == NULL) {
-            goto error;
+            PyObject* p_type, * p_value, * p_traceback;
+            PyErr_Fetch(&p_type, &p_value, &p_traceback);
+            mod = FindBuildtinModule(abs_name); //pyxie
+            if (mod == NULL) {
+                PyErr_Restore(p_type, p_value, p_traceback);
+                goto error;
+            }
+            PyErr_Clear();
         }
+    // [/IGE]
     }
 
     has_from = 0;
