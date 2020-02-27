@@ -50,6 +50,10 @@ if not exist %OUTPUT_DIR% (
     mkdir %OUTPUT_DIR%
 )
 
+if not exist %BUILD_DIR% (
+    mkdir %BUILD_DIR%
+)
+
 echo Cleaning up...
     if exist %OUTPUT_LIBS_DEBUG% (
         rmdir /s /q %OUTPUT_LIBS_DEBUG%
@@ -69,11 +73,11 @@ echo Compiling armeabi-v7a...
     cd %BUILD_DIR%\armeabi-v7a\Debug
     echo Generating armeabi-v7a Debug CMAKE project ...
     cmake -G Ninja -DCMAKE_TOOLCHAIN_FILE=!ANDROID_TOOLCHAIN! -DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=android-21 -DCMAKE_BUILD_TYPE=Debug %PROJECT_DIR%
-    if errorlevel 1 goto ERROR
+    if %ERRORLEVEL% NEQ 0 goto ERROR
 
     echo Compiling armeabi-v7a - Debug...
     cmake --build .
-    if errorlevel 1 goto ERROR
+    if %ERRORLEVEL% NEQ 0 goto ERROR
     xcopy /q /y *.a %OUTPUT_LIBS_DEBUG%\armeabi-v7a\
     xcopy /q /y *.so %OUTPUT_LIBS_DEBUG%\armeabi-v7a\
 
@@ -86,7 +90,7 @@ echo Compiling armeabi-v7a...
 
     echo Compiling armeabi-v7a - Release...
     cmake --build .
-    if errorlevel 1 goto ERROR
+    if %ERRORLEVEL% NEQ 0 goto ERROR
     xcopy /q /y *.a %OUTPUT_LIBS_RELEASE%\armeabi-v7a\
     xcopy /q /y *.so %OUTPUT_LIBS_RELEASE%\armeabi-v7a\
 echo Compiling armeabi-v7a DONE
@@ -99,11 +103,11 @@ echo Compiling arm64-v8a...
     cd %BUILD_DIR%\arm64-v8a\Debug
     echo Generating arm64-v8a Debug CMAKE project ...
     cmake -G Ninja -DCMAKE_TOOLCHAIN_FILE=!ANDROID_TOOLCHAIN! -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-21 -DANDROID_ARM_MODE=arm -DANDROID_ARM_NEON=TRUE -DCMAKE_BUILD_TYPE=Debug %PROJECT_DIR%
-    if errorlevel 1 goto ERROR
+    if %ERRORLEVEL% NEQ 0 goto ERROR
 
     echo Compiling arm64-v8a - Debug...
     cmake --build .
-    if errorlevel 1 goto ERROR
+    if %ERRORLEVEL% NEQ 0 goto ERROR
     xcopy /q /y *.a %OUTPUT_LIBS_DEBUG%\arm64-v8a\
     xcopy /q /y *.so %OUTPUT_LIBS_DEBUG%\arm64-v8a\
 
@@ -116,7 +120,7 @@ echo Compiling arm64-v8a...
 
     echo Compiling arm64-v8a - Release...
     cmake --build .
-    if errorlevel 1 goto ERROR
+    if %ERRORLEVEL% NEQ 0 goto ERROR
     xcopy /q /y *.a %OUTPUT_LIBS_RELEASE%\arm64-v8a\
     xcopy /q /y *.so %OUTPUT_LIBS_RELEASE%\arm64-v8a\
 echo Compiling arm64-v8a DONE
@@ -129,11 +133,11 @@ echo Compiling x86...
     cd %BUILD_DIR%\x86\Debug
     echo Generating x86 Debug CMAKE project ...
     cmake -G Ninja -DCMAKE_TOOLCHAIN_FILE=!ANDROID_TOOLCHAIN! -DANDROID_ABI=x86 -DANDROID_PLATFORM=android-21 -DCMAKE_BUILD_TYPE=Debug %PROJECT_DIR%
-    if errorlevel 1 goto ERROR
+    if %ERRORLEVEL% NEQ 0 goto ERROR
 
     echo Compiling x86 - Debug...
     cmake --build .
-    if errorlevel 1 goto ERROR
+    if %ERRORLEVEL% NEQ 0 goto ERROR
     xcopy /q /y *.a %OUTPUT_LIBS_DEBUG%\x86\
     xcopy /q /y *.so %OUTPUT_LIBS_DEBUG%\x86\
 
@@ -146,7 +150,7 @@ echo Compiling x86...
 
     echo Compiling x86 - Release...
     cmake --build .
-    if errorlevel 1 goto ERROR
+    if %ERRORLEVEL% NEQ 0 goto ERROR
     xcopy /q /y *.a %OUTPUT_LIBS_RELEASE%\x86\
     xcopy /q /y *.so %OUTPUT_LIBS_RELEASE%\x86\
 echo Compiling x86 DONE
@@ -159,11 +163,11 @@ echo Compiling x86_64...
     cd %BUILD_DIR%\x86_64\Debug
     echo Generating x86_64 Debug CMAKE project ...
     cmake -G Ninja -DCMAKE_TOOLCHAIN_FILE=!ANDROID_TOOLCHAIN! -DANDROID_ABI=x86_64 -DANDROID_PLATFORM=android-21 -DCMAKE_BUILD_TYPE=Debug %PROJECT_DIR%
-    if errorlevel 1 goto ERROR
+    if %ERRORLEVEL% NEQ 0 goto ERROR
 
     echo Compiling x86_64 - Debug...
     cmake --build .
-    if errorlevel 1 goto ERROR
+    if %ERRORLEVEL% NEQ 0 goto ERROR
     xcopy /q /y *.a %OUTPUT_LIBS_DEBUG%\x86_64\
     xcopy /q /y *.so %OUTPUT_LIBS_DEBUG%\x86_64\
     
@@ -176,7 +180,7 @@ echo Compiling x86_64...
 
     echo Compiling x86_64 - Release...
     cmake --build .
-    if errorlevel 1 goto ERROR
+    if %ERRORLEVEL% NEQ 0 goto ERROR
     xcopy /q /y *.a %OUTPUT_LIBS_RELEASE%\x86_64\
     xcopy /q /y *.so %OUTPUT_LIBS_RELEASE%\x86_64\
 echo Compiling x86_64 DONE
@@ -184,8 +188,8 @@ echo Compiling x86_64 DONE
 goto ALL_DONE
 
 :ERROR
-	echo ERROR OCCURED DURING COMPILING PC
+	echo ERROR OCCURED DURING COMPILING
 
 :ALL_DONE
 	cd %PROJECT_DIR%
-	echo COMPILING PC DONE!
+	echo COMPILING DONE!
