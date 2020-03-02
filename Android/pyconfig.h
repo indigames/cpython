@@ -1100,6 +1100,7 @@
 
 /* Define to 1 if you have the <sys/sendfile.h> header file. */
 /* #undef HAVE_SYS_SENDFILE_H */
+#define HAVE_SYS_SENDFILE_H 1
 
 /* Define to 1 if you have the <sys/socket.h> header file. */
 #define HAVE_SYS_SOCKET_H 1
@@ -1602,7 +1603,11 @@
 #define STRICT_SYSV_CURSES /* Don't use ncurses extensions */
 #endif
 
+#define PREFIX "/usr/local"
+#define EXEC_PREFIX "/usr/local"
 #define VERSION "3.7"
+#define VPATH ""
+#define PYTHONPATH "/usr/local"
 #define SOABI "cpython-37m-darwin"
 #define PLATFORM "Android"
 

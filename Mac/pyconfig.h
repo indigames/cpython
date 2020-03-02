@@ -1587,7 +1587,11 @@
 #define STRICT_SYSV_CURSES /* Don't use ncurses extensions */
 #endif
 
+#define PREFIX "/usr/local"
+#define EXEC_PREFIX "/usr/local"
 #define VERSION "3.7"
+#define VPATH ""
+#define PYTHONPATH "/usr/local"
 #define SOABI "cpython-37m-darwin"
 #define PLATFORM "OSX"
 

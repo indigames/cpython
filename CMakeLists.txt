@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(Python)
 
+set(IGE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/igeLibs)
+
 # [IGE]: tweaks for platforms
 if(DEFINED ANDROID_PLATFORM)
     set (ANDROID 1)
@@ -58,6 +60,70 @@ if(MSVC)
   endforeach()
 endif()
 
+################# BUILT-IN MODULES ########################
+
+### 01: _sqlite3
+add_library(_sqlite STATIC
+    Modules/_sqlite/cache.c
+    Modules/_sqlite/connection.c
+    Modules/_sqlite/cursor.c
+    Modules/_sqlite/microprotocols.c
+    Modules/_sqlite/module.c
+    Modules/_sqlite/prepare_protocol.c
+    Modules/_sqlite/row.c
+    Modules/_sqlite/statement.c
+    Modules/_sqlite/util.c
+    Modules/_sqlite/sqlite3.c # [IGE]: manual added to Python
+)
+target_include_directories(_sqlite PRIVATE ${PYTHON_INCLUDE_DIRS} Modules/_sqlite)
+target_compile_definitions(_sqlite PRIVATE MODULE_NAME="sqlite3" )
+if(ANDROID)
+  target_compile_options(_sqlite PUBLIC "-fno-fast-math")
+endif()
+
+### 02: _ssl
+if(MSVC)
+    set(sslsrc Modules/_ssl.c ${IGE_ROOT}/openssl/libs/Release/pc/x64/applink.c)
+    set(ssllib
+        ${IGE_ROOT}/openssl/libs/Release/pc/x64/libcrypto.lib
+        ${IGE_ROOT}/openssl/libs/Release/pc/x64/libssl.lib)
+elseif(OSX)
+    set(sslsrc Modules/_ssl.c)
+    set(ssllib
+        ${IGE_ROOT}/openssl/libs/Release/macos/x64/libcrypto.a
+        ${IGE_ROOT}/openssl/libs/Release/macos/x64/libssl.a)
+elseif(IOS)
+    set(sslsrc Modules/_ssl.c)
+    set(ssllib
+        ${IGE_ROOT}/openssl/libs/Release/ios/arm64/libcrypto.a
+        ${IGE_ROOT}/openssl/libs/Release/ios/arm64/libssl.a)
+elseif(ANDROID)
+    set(sslsrc Modules/_ssl.c)
+    set(ssllib
+        ${IGE_ROOT}/openssl/libs/Release/android/${ANDROID_ABI}/libssl.a
+        ${IGE_ROOT}/openssl/libs/Release/android/${ANDROID_ABI}/libcrypto.a)
+endif()
+add_library(_ssl STATIC ${sslsrc})
+target_include_directories(_ssl PRIVATE ${PYTHON_INCLUDE_DIRS} ${IGE_ROOT}/openssl/include)
+target_link_libraries(_ssl ${ssllib})
+
+### 03. _socket
+add_library(_socket STATIC Modules/socketmodule.c)
+target_include_directories(_socket PRIVATE ${PYTHON_INCLUDE_DIRS})
+
+### 04. select
+add_library(_select STATIC Modules/selectmodule.c)
+target_include_directories(_select PRIVATE ${PYTHON_INCLUDE_DIRS})
+
+### 05. unicodedata
+add_library(_unicodedata STATIC Modules/unicodedata.c)
+target_include_directories(_unicodedata PRIVATE ${PYTHON_INCLUDE_DIRS})
+
+### 06. _queue
+add_library(_queue STATIC Modules/_queuemodule.c)
+target_include_directories(_queue PRIVATE ${PYTHON_INCLUDE_DIRS})
+
+### 07. _ctypes
 set (CTYPES_SOURCE
 	Modules/_ctypes/_ctypes.c
 	Modules/_ctypes/_ctypes_test.c
@@ -65,149 +131,41 @@ set (CTYPES_SOURCE
 	Modules/_ctypes/callproc.c
 	Modules/_ctypes/cfield.c
 	Modules/_ctypes/malloc_closure.c
-	Modules/_ctypes/stgdict.c	
+	Modules/_ctypes/stgdict.c
 )
-
 add_library(_ctypes STATIC ${PYTHON_INCLUDE_DIRS} ${CTYPES_SOURCE})
 target_include_directories(_ctypes PRIVATE ${PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ctypes)
-
 if (MSVC)
-    target_include_directories(_ctypes PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ctypes/libffi_msvc)
+    target_include_directories(_ctypes PRIVATE Modules/_ctypes/libffi_msvc)
 elseif (OSX)
-    target_include_directories(_ctypes PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ctypes/libffi_osx)
+    target_include_directories(_ctypes PRIVATE Modules/_ctypes/libffi_osx)
 else()
-    target_include_directories(_ctypes PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ctypes/libffi_dummy)
+    target_include_directories(_ctypes PRIVATE Modules/_ctypes/libffi_dummy)
 endif()
 
-add_library(pyexpat STATIC Modules/pyexpat.c
-${CMAKE_CURRENT_SOURCE_DIR}/Modules/expat/xmlparse.c
-${CMAKE_CURRENT_SOURCE_DIR}/Modules/expat/xmlrole.c
-${CMAKE_CURRENT_SOURCE_DIR}/Modules/expat/xmltok.c
-${CMAKE_CURRENT_SOURCE_DIR}/Modules/expat/xmltok_impl.c
-${CMAKE_CURRENT_SOURCE_DIR}/Modules/expat/xmltok_ns.c
+### 08. pyexpat
+add_library(_pyexpat STATIC Modules/pyexpat.c
+    Modules/expat/xmlparse.c
+    Modules/expat/xmlrole.c
+    Modules/expat/xmltok.c
+    Modules/expat/xmltok_impl.c
+    Modules/expat/xmltok_ns.c
 )
-target_compile_definitions(pyexpat PUBLIC HAVE_EXPAT_CONFIG_H=1)
-target_include_directories(pyexpat PRIVATE ${PYTHON_INCLUDE_DIRS}  ${CMAKE_CURRENT_SOURCE_DIR}/Modules/expat)
+target_compile_definitions(_pyexpat PUBLIC HAVE_EXPAT_CONFIG_H=1)
+target_include_directories(_pyexpat PRIVATE ${PYTHON_INCLUDE_DIRS}  ${CMAKE_CURRENT_SOURCE_DIR}/Modules/expat)
 
-
-add_library(unicodedata STATIC Modules/unicodedata.c)
-target_include_directories(unicodedata PRIVATE ${PYTHON_INCLUDE_DIRS})
-
-add_library(select STATIC Modules/selectmodule.c)
-target_include_directories(select PRIVATE ${PYTHON_INCLUDE_DIRS})
-
-add_library(_socket STATIC Modules/socketmodule.c)
-target_include_directories(_socket PRIVATE ${PYTHON_INCLUDE_DIRS})
-
+### 09. _asyncio
 add_library(_asyncio STATIC Modules/_asynciomodule.c)
 target_include_directories(_asyncio PRIVATE ${PYTHON_INCLUDE_DIRS})
 
-add_library(_queue STATIC Modules/_queuemodule.c)
-target_include_directories(_queue PRIVATE ${PYTHON_INCLUDE_DIRS})
+### 10. zlibmodule
+add_library(_zlib STATIC Modules/zlibmodule.c)
+target_include_directories(_zlib PRIVATE ${PYTHON_INCLUDE_DIRS} ${IGE_ROOT}/zlib/include)
+if(MSVC)
+    target_link_libraries(_zlib ${IGE_ROOT}/zlib/libs/Release/pc/x64/zlib.lib)
+endif()
 
-# add_library(zlibmodule STATIC Modules/zlibmodule.c)
-# target_include_directories(zlibmodule PRIVATE ${PYTHON_INCLUDE_DIRS} ${PIXYE_ROOT}/lib/ThirdParty/zlib)
-
-
-# add_library(stb STATIC ${PIXYE_ROOT}/lib/ThirdParty/stb/stb_image.cpp ${PIXYE_ROOT}/lib/ThirdParty/stb/stb_image_write.cpp)
-# target_include_directories(stb PRIVATE ${PIXYE_ROOT}/lib/ThirdParty/stb)
-
-
-# add_subdirectory(${PIXYE_ROOT}/lib/ThirdParty/sqlite ${CMAKE_BINARY_DIR}/sqlite)
-
-# IF(MSVC)
-# set(ZLIB_LIBRARY zlib)
-# add_subdirectory(${PIXYE_ROOT}/lib/ThirdParty/zlib ${CMAKE_BINARY_DIR}/zlib)
-# ENDIF()
-
-# add_subdirectory(${PIXYE_ROOT}/lib/ThirdParty/imgui-1.0.0 ${CMAKE_BINARY_DIR}/imgui)
-
-# add_subdirectory(${PIXYE_ROOT}/lib/ThirdParty/box2d-py-2.3.8 ${CMAKE_BINARY_DIR}/Box2D)
-
-# add_subdirectory(${PIXYE_ROOT}/lib/ThirdParty/numpy ${CMAKE_BINARY_DIR}/numpy)
-
-# add_subdirectory(${PIXYE_ROOT}/lib/ThirdParty/opencv ${CMAKE_BINARY_DIR}/opencv)
-
-# add_subdirectory(${PIXYE_ROOT}/lib/ThirdParty/dlib/tools/python ${CMAKE_BINARY_DIR}/dlib_python)
-
-# add_subdirectory(${PIXYE_ROOT}/module/igeNanoGUI ${CMAKE_BINARY_DIR}/igeNanoGUI)
-
-# add_library(_sqlite STATIC
-		# Modules/_sqlite/cache.c
-		# Modules/_sqlite/connection.c
-		# Modules/_sqlite/cursor.c
-		# Modules/_sqlite/microprotocols.c
-		# Modules/_sqlite/module.c
-		# Modules/_sqlite/prepare_protocol.c
-		# Modules/_sqlite/row.c
-		# Modules/_sqlite/statement.c
-		# Modules/_sqlite/util.c
-# )
-# target_include_directories(_sqlite PRIVATE ${PYTHON_INCLUDE_DIRS} ${PIXYE_ROOT}/lib/ThirdParty/sqlite)
-# target_link_libraries(_sqlite sqlite3)
-# target_compile_definitions(_sqlite PRIVATE MODULE_NAME="sqlite3" )
-
-
-# IF(MSVC)
-	# set(sslsrc Modules/_ssl.c ${PIXYE_ROOT}/lib/ThirdParty/openssl/win64/applink.c)
-	# set(ssllib 
-		# ${PIXYE_ROOT}/lib/ThirdParty/openssl/win64d/libcrypto.lib
-		# ${PIXYE_ROOT}/lib/ThirdParty/openssl/win64d/libssl.lib)
-# ELSEIF(Linux)
-# ELSEIF(OSX)
-	# set(sslsrc Modules/_ssl.c)
-	# set(ssllib 
-		# ${PIXYE_ROOT}/lib/ThirdParty/openssl/osx64/libcrypto.a
-		# ${PIXYE_ROOT}/lib/ThirdParty/openssl/osx64/libssl.a)
-# ELSEIF(IOS)
-	# set(sslsrc Modules/_ssl.c)
-	# set(ssllib 
-		# ${PIXYE_ROOT}/lib/ThirdParty/openssl/ios/libcrypto.a
-		# ${PIXYE_ROOT}/lib/ThirdParty/openssl/ios/libssl.a)
-# ELSEIF(Android)
-	# set(sslsrc Modules/_ssl.c)
-	# set(ssllib
-		# ${PIXYE_ROOT}/lib/ThirdParty/openssl/android/${ANDROID_ABI}/libssl.a
-		# ${PIXYE_ROOT}/lib/ThirdParty/openssl/android/${ANDROID_ABI}/libcrypto.a)
-# ENDIF()
-# add_library(_ssl STATIC ${sslsrc})
-# target_include_directories(_ssl PRIVATE ${PYTHON_INCLUDE_DIRS} ${PIXYE_ROOT}/lib/ThirdParty/openssl/include)
-
-
-# set(cv2_src ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/python/src2/cv2.cpp)
-# add_library(_cv2 STATIC ${cv2_src})
-# target_include_directories(_cv2 PRIVATE 
-	# ${CMAKE_BINARY_DIR}
-	# ${PYTHON_INCLUDE_DIRS} 
-	# ${PIXYE_ROOT}/lib/ThirdParty/numpy/gen/numpy/core/include
-	# ${PIXYE_ROOT}/lib/ThirdParty/numpy/gen/numpy/core/include/numpy
-	# ${PIXYE_ROOT}/lib/ThirdParty/numpy/numpy/core/include
-	# ${PIXYE_ROOT}/lib/ThirdParty/numpy/numpy/core/include/numpy
-	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/build/modules/python_bindings_generator
-	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/include
-	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/core/include
-	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/flann/include
-	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/imgproc/include
-	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/ml/include
-	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/photo/include
-	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/dnn/include
-	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/features2d/include
-	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/imgcodecs/include
-	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/videoio/include
-	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/calib3d/include
-	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/highgui/include
-	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/objdetect/include
-	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/stitching/include
-	# ${PIXYE_ROOT}/lib/ThirdParty/opencv/modules/video/include
-	# )
-# target_link_libraries(_cv2 	opencv_calib3d opencv_core opencv_dnn opencv_features2d
-							# opencv_flann opencv_highgui opencv_imgcodecs opencv_imgproc
-							# opencv_ml opencv_objdetect opencv_photo opencv_stitching
-							# opencv_video opencv_videoio)
-# if (MSVC)
-    # target_compile_options(_cv2 PRIVATE /bigobj)
-# endif()
-
+### 11. Other modules and Python core
 IF(MSVC)
 	set(SOURCES
 			PC/config.c
@@ -241,16 +199,14 @@ ELSEIF(IOS)
 			Modules/pwdmodule.c
 			Modules/_posixsubprocess.c
 			)
-ELSEIF(Android)
+ELSEIF(ANDROID)
 	set(SOURCES
 			Android/config.c
-			#Android/getpathp.c
 			Python/dynload_shlib.c
 			Modules/getpath.c
 			Modules/pwdmodule.c
 			Modules/_posixsubprocess.c
-			Modules/_contextvarsmodule.c
-			)
+)
 ENDIF()
 
 set(SOURCES ${SOURCES}
@@ -443,32 +399,33 @@ if(WIN32)
 target_link_libraries(${PYTHON_LIB} Version shlwapi ws2_32)
 endif()
 
-target_include_directories(${PYTHON_LIB} PUBLIC 
-	${PIXYE_ROOT}/lib/pyxcore
-	${PIXYE_ROOT}/module/igeCore
+target_include_directories(${PYTHON_LIB} PUBLIC
+	# ${IGE_ROOT}/pyxcore/include
+	# ${IGE_ROOT}/igeCore/include
 	${PYTHON_INCLUDE_DIRS}
-	${PIXYE_ROOT}/lib/ThirdParty/gzip
 	${INCLUDES}
 )
+
 target_compile_definitions(${PYTHON_LIB} PUBLIC ${DEFINITIONS})
 
-target_link_libraries(${PYTHON_LIB} 
-# _ssl ${ssllib} 
-# _Box2D 
-# imguicore 
-# zlibmodule 
-# unicodedata 
-# pyexpat
-# select 
-# _queue 
-# _socket 
-# _sqlite 
-# _asyncio  
-# ${ZLIB_LIBRARY}
-# _ctypes
-# numpy
-# stb
-# _cv2
-# dlib_python
-# nanogui-python
+target_link_libraries(${PYTHON_LIB}
+    _sqlite
+    _ssl
+    _socket
+    _select
+    _unicodedata
+    _queue
+    _ctypes
+    _pyexpat
+    _asyncio
+    _zlib
+
+    # _Box2D
+    # imguicore
+    # ${ZLIB_LIBRARY}
+    # numpy
+    # stb
+    # _cv2
+    # dlib_python
+    # nanogui-python
 )

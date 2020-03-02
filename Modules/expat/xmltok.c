@@ -50,6 +50,10 @@
 #  endif
 #endif /* ndef _WIN32 */
 
+// [IGE]: undef to fix compile error
+#undef PREFIX
+/// [/IGE]
+
 #include "expat_external.h"
 #include "internal.h"
 #include "xmltok.h"

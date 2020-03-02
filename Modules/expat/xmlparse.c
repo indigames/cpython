@@ -64,6 +64,10 @@
 #  include <expat_config.h>
 #endif /* ndef _WIN32 */
 
+// [IGE]: undef to fix compile error
+#undef PREFIX
+/// [/IGE]
+
 #include "ascii.h"
 #include "expat.h"
 #include "siphash.h"
