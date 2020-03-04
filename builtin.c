@@ -19,8 +19,7 @@ extern PyObject* PyInit__contextvars(void);
 
 
 // Custom modules, declared in igeLauncher project
-extern void* GetCustomInitTabs();
-
+extern struct _inittab g_customInitTabs[];
 
 // Built-In modules
 struct _inittab g_builtInInitTabs[] = {
@@ -150,7 +149,7 @@ PyObject* FindBuildtinModule(PyObject* abs_name) {
         return pyModule;
 
     // Find custome modules
-    pyModule = FindModule(abs_name, (struct _inittab*)GetCustomInitTabs());
+    pyModule = FindModule(abs_name, (struct _inittab*)g_customInitTabs);
     if(pyModule != 0)
         return pyModule;
 
