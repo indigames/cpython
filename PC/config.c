@@ -16,7 +16,6 @@ extern PyObject* PyInit__tracemalloc(void);
 extern PyObject* PyInit_gc(void);
 extern PyObject* PyInit_math(void);
 extern PyObject* PyInit__md5(void);
-extern PyObject* PyInit_nt(void);
 extern PyObject* PyInit__operator(void);
 extern PyObject* PyInit__signal(void);
 extern PyObject* PyInit__sha1(void);
@@ -26,10 +25,19 @@ extern PyObject* PyInit__sha3(void);
 extern PyObject* PyInit__blake2(void);
 extern PyObject* PyInit_time(void);
 extern PyObject* PyInit__thread(void);
+
 #ifdef WIN32
 extern PyObject* PyInit_msvcrt(void);
 extern PyObject* PyInit__locale(void);
+extern PyObject* PyInit_nt(void);
+extern PyObject* PyInit__winapi(void);
+extern PyObject* PyInit_winreg(void);
+#else
+extern PyObject* PyInit_posix(void);
+extern PyObject* PyInit_pwd(void);
+extern PyObject* PyInit__posixsubprocess(void);
 #endif
+
 extern PyObject* PyInit__codecs(void);
 extern PyObject* PyInit__weakref(void);
 /* XXX: This one should really be extracted to standalone extension. */
@@ -45,7 +53,6 @@ extern PyObject* PyInit_mmap(void);
 extern PyObject* PyInit__csv(void);
 extern PyObject* PyInit__sre(void);
 extern PyObject* PyInit_parser(void);
-extern PyObject* PyInit_winreg(void);
 extern PyObject* PyInit__struct(void);
 extern PyObject* PyInit__datetime(void);
 extern PyObject* PyInit__functools(void);
@@ -61,7 +68,6 @@ extern PyObject* PyInit__codecs_iso2022(void);
 extern PyObject* PyInit__codecs_jp(void);
 extern PyObject* PyInit__codecs_kr(void);
 extern PyObject* PyInit__codecs_tw(void);
-extern PyObject* PyInit__winapi(void);
 extern PyObject* PyInit__lsprof(void);
 extern PyObject* PyInit__ast(void);
 extern PyObject* PyInit__io(void);
@@ -92,7 +98,13 @@ struct _inittab _PyImport_Inittab[] = {
     {"faulthandler", PyInit_faulthandler},
     {"gc", PyInit_gc},
     {"math", PyInit_math},
-    {"nt", PyInit_nt}, /* Use the NT os functions, not posix */
+#ifdef WIN32
+    {"nt", PyInit_nt}, /* Use the NT os functions */
+#else
+    {"posix", PyInit_posix}, /* Use posix functions */
+    {"pwd", PyInit_pwd},
+    {"_posixsubprocess", PyInit__posixsubprocess},
+#endif
     {"_operator", PyInit__operator},
     {"_signal", PyInit__signal},
     {"_md5", PyInit__md5},
@@ -106,11 +118,11 @@ struct _inittab _PyImport_Inittab[] = {
 #ifdef WIN32
     {"msvcrt", PyInit_msvcrt},
     {"_locale", PyInit__locale},
-#endif
-    {"_tracemalloc", PyInit__tracemalloc},
     /* XXX Should _winapi go in a WIN32 block?  not WIN64? */
     {"_winapi", PyInit__winapi},
-
+    {"winreg", PyInit_winreg},
+#endif
+    {"_tracemalloc", PyInit__tracemalloc},
     {"_codecs", PyInit__codecs},
     {"_weakref", PyInit__weakref},
     {"_random", PyInit__random},
@@ -124,7 +136,6 @@ struct _inittab _PyImport_Inittab[] = {
     {"_csv", PyInit__csv},
     {"_sre", PyInit__sre},
     {"parser", PyInit_parser},
-    {"winreg", PyInit_winreg},
     {"_struct", PyInit__struct},
     {"_datetime", PyInit__datetime},
     {"_functools", PyInit__functools},

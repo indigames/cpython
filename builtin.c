@@ -10,11 +10,6 @@ extern PyObject* PyInit__queue(void);
 extern PyObject* PyInit__ctypes(void);
 extern PyObject* PyInit_pyexpat(void);
 extern PyObject* PyInit__asyncio(void);
-extern PyObject* PyInit_zlib(void);
-extern PyObject* PyInit__contextvars(void);
-#if !defined(WIN32)
-    extern PyObject* PyInit__posixsubprocess(void);
-#endif
 /// END - Internal Modules
 
 
@@ -29,14 +24,9 @@ struct _inittab g_builtInInitTabs[] = {
     {"select", PyInit_select},
     {"unicodedata", PyInit_unicodedata},
     {"_queue", PyInit__queue},
-    {"_ctypes", PyInit__ctypes},    
+    {"_ctypes", PyInit__ctypes},
     {"pyexpat", PyInit_pyexpat},
     {"_asyncio", PyInit__asyncio},
-    {"zlib", PyInit_zlib},
-    {"_contextvars", PyInit__contextvars},
-#if !defined(WIN32)
-    {"_posixsubprocess", PyInit__posixsubprocess},
-#endif
     {0, 0}
 };
 
@@ -115,7 +105,7 @@ PyObject* FindModule(PyObject* abs_name, void* inittab) {
         if (strcmp(tab->name, name) == 0) {
             //PyImport_AddModule(name);
             PyObject* pyModule = (*tab->initfunc)();
-
+            if (!pyModule) return 0;
             if (PyObject_TypeCheck(pyModule, &PyModuleDef_Type)) {
                 spec = createSpec(name, "built-in");
                 def = (PyModuleDef*)pyModule;

@@ -11,6 +11,12 @@
 #include "structmember.h"
 #include "_iomodule.h"
 
+// [IGE]: IGE FileIO
+#ifdef USE_IGE
+    #include "pyxieDebug.h"
+#endif
+// [/IGE]
+
 /*[clinic input]
 module _io
 class _io.IncrementalNewlineDecoder "nldecoder_object *" "&PyIncrementalNewlineDecoder_Type"
@@ -1540,6 +1546,13 @@ _io_TextIOWrapper_write_impl(textio *self, PyObject *text)
         return _unsupported("not writable");
 
     Py_INCREF(text);
+
+// [IGE]: IGE FileIO
+#ifdef USE_IGE
+    void* data = PyUnicode_DATA(text);
+    pyxie_printf(data);
+#endif
+// [/IGE]
 
     textlen = PyUnicode_GET_LENGTH(text);
 
