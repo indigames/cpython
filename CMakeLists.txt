@@ -83,25 +83,28 @@ endif()
 
 ### 02: _ssl
 if(MSVC)
-    set(sslsrc Modules/_ssl.c ${IGE_ROOT}/openssl/libs/Release/pc/x64/applink.c)
+    set(sslsrc Modules/_ssl.c ${IGE_ROOT}/openssl/libs/pc/Release/x64/applink.c)
     set(ssllib
-        ${IGE_ROOT}/openssl/libs/Release/pc/x64/libcrypto.lib
-        ${IGE_ROOT}/openssl/libs/Release/pc/x64/libssl.lib)
+        debug ${IGE_ROOT}/openssl/libs/pc/Debug/x64/libcrypto.lib
+        debug${IGE_ROOT}/openssl/libs/pc/Debug/x64/libssl.lib
+        optimized ${IGE_ROOT}/openssl/libs/pc/Release/x64/libcrypto.lib
+        optimized ${IGE_ROOT}/openssl/libs/pc/Release/x64/libssl.lib
+    )
 elseif(OSX)
     set(sslsrc Modules/_ssl.c)
     set(ssllib
-        ${IGE_ROOT}/openssl/libs/Release/macos/x64/libcrypto.a
-        ${IGE_ROOT}/openssl/libs/Release/macos/x64/libssl.a)
+        ${IGE_ROOT}/openssl/libs/macos/x64/libcrypto.a
+        ${IGE_ROOT}/openssl/libs/macos/x64/libssl.a)
 elseif(IOS)
     set(sslsrc Modules/_ssl.c)
     set(ssllib
-        ${IGE_ROOT}/openssl/libs/Release/ios/arm64/libcrypto.a
-        ${IGE_ROOT}/openssl/libs/Release/ios/arm64/libssl.a)
+        ${IGE_ROOT}/openssl/libs/ios/arm64/libcrypto.a
+        ${IGE_ROOT}/openssl/libs/ios/arm64/libssl.a)
 elseif(ANDROID)
     set(sslsrc Modules/_ssl.c)
     set(ssllib
-        ${IGE_ROOT}/openssl/libs/Release/android/${ANDROID_ABI}/libssl.a
-        ${IGE_ROOT}/openssl/libs/Release/android/${ANDROID_ABI}/libcrypto.a)
+        ${IGE_ROOT}/openssl/libs/android/${ANDROID_ABI}/libssl.a
+        ${IGE_ROOT}/openssl/libs/android/${ANDROID_ABI}/libcrypto.a)
 endif()
 add_library(_ssl OBJECT ${sslsrc})
 target_include_directories(_ssl PRIVATE ${PYTHON_INCLUDE_DIRS} ${IGE_ROOT}/openssl/include)
