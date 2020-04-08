@@ -94,12 +94,10 @@ endif()
 ### 02: _ssl
 if(MSVC)
     set(sslsrc ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ssl.c
-        ${IGE_ROOT}/igeLibs/openssl/libs/pc/Release/x64/applink.c)
+        ${IGE_ROOT}/igeLibs/openssl/libs/pc/x64/applink.c)
     set(ssllib
-        debug ${IGE_ROOT}/igeLibs/openssl/libs/pc/Debug/x64/libcrypto.lib
-        debug ${IGE_ROOT}/igeLibs/openssl/libs/pc/Debug/x64/libssl.lib
-        optimized ${IGE_ROOT}/igeLibs/openssl/libs/pc/Release/x64/libcrypto.lib
-        optimized ${IGE_ROOT}/igeLibs/openssl/libs/pc/Release/x64/libssl.lib
+        ${IGE_ROOT}/igeLibs/openssl/libs/pc/x64/crypto.lib
+        ${IGE_ROOT}/igeLibs/openssl/libs/pc/x64/ssl.lib
     )
 elseif(OSX)
     set(sslsrc ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ssl.c)
@@ -177,7 +175,7 @@ target_include_directories(_asyncio PRIVATE ${PYTHON_INCLUDE_DIRS})
 add_library(_zlib ${BUILD_TYPE} ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlibmodule.c)
 target_include_directories(_zlib PRIVATE ${PYTHON_INCLUDE_DIRS} ${IGE_ROOT}/igeLibs/zlib/include)
 if(MSVC)
-    target_link_libraries(_zlib ${IGE_ROOT}/igeLibs/zlib/libs/pc/Release/x64/zlib.lib)
+    target_link_libraries(_zlib ${IGE_ROOT}/igeLibs/zlib/libs/pc/x64/zlib.lib)
 endif()
 
 ### 11. Other modules and Python core
