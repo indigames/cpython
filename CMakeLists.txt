@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-file(TO_CMAKE_PATH $ENV{IGE_LIBS} IGE_LIBS)
-
 project(Python)
 
 file(TO_CMAKE_PATH $ENV{IGE_LIBS} IGE_LIBS)
