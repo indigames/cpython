@@ -23,6 +23,10 @@ if(DEFINED ANDROID_PLATFORM)
     endif()
 elseif(MSVC)
     add_compile_options(/MP)
+elseif(IOS)
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_compile_options(-g0 -Ofast)
+    endif()
 endif()
 # [/IGE]
 
@@ -85,7 +89,7 @@ add_library(_sqlite ${BUILD_TYPE}
 )
 target_include_directories(_sqlite PRIVATE ${PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_sqlite)
 target_compile_definitions(_sqlite PRIVATE MODULE_NAME="sqlite3" )
-if(ANDROID)
+if(ANDROID OR IOS)
     target_compile_options(_sqlite PUBLIC "-fno-fast-math")
 endif()
 
