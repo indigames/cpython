@@ -9,21 +9,13 @@ echo COMPILING ...
 SET PROJECT_DIR=%~dp0..
 
 SET BUILD_DIR=%PROJECT_DIR%\build\pc
-SET OUTPUT_DIR=%PROJECT_DIR%\igeLibs\%LIB_NAME%
-SET OUTPUT_HEADER=%OUTPUT_DIR%
+SET OUTPUT_DIR=%IGE_LIBS%\%LIB_NAME%
 SET OUTPUT_LIBS_DEBUG=%OUTPUT_DIR%\libs\pc\Debug
 SET OUTPUT_LIBS_RELEASE=%OUTPUT_DIR%\libs\pc
 
 SET CALL_DIR=%CD%
 
-if not exist "%PROJECT_DIR%\igeLibs" (
-    mklink /J "%PROJECT_DIR%\igeLibs" "%IGE_LIBS%"
-)
-
-if not exist "%PROJECT_DIR%\igeLibs" (
-    echo IGE_LIBS was not set, please clone igeLibs and set IGE_LIBS to the cloned path!
-    goto ERROR
-)
+echo Compiling %LIB_NAME% ...
 
 if not exist %OUTPUT_DIR% (
     mkdir %OUTPUT_DIR%
@@ -34,18 +26,6 @@ if not exist %BUILD_DIR% (
 )
 
 echo Cleaning up...
-    if not exist %OUTPUT_HEADER% (
-        mkdir %OUTPUT_HEADER%
-    )
-    
-    if exist %OUTPUT_HEADER%\Include (
-        rmdir /s /q %OUTPUT_HEADER%\Include
-        rmdir /s /q %OUTPUT_HEADER%\Android
-        rmdir /s /q %OUTPUT_HEADER%\IOS
-        rmdir /s /q %OUTPUT_HEADER%\Mac
-        rmdir /s /q %OUTPUT_HEADER%\PC
-    )
-    
     if [%BUILD_DEBUG%]==[1] (
         if exist %OUTPUT_LIBS_DEBUG% (
             rmdir /s /q %OUTPUT_LIBS_DEBUG%
@@ -57,13 +37,6 @@ echo Cleaning up...
         rmdir /s /q %OUTPUT_LIBS_RELEASE%
     )
     mkdir %OUTPUT_LIBS_RELEASE%
-
-echo Fetching include headers...
-    xcopy /q /s /y %~dp0..\Include\*.h?? %OUTPUT_HEADER%\Include\
-    xcopy /q /s /y %~dp0..\Android\*.h?? %OUTPUT_HEADER%\Android\
-    xcopy /q /s /y %~dp0..\IOS\*.h?? %OUTPUT_HEADER%\IOS\
-    xcopy /q /s /y %~dp0..\Mac\*.h?? %OUTPUT_HEADER%\Mac\
-    xcopy /q /s /y %~dp0..\PC\*.h?? %OUTPUT_HEADER%\PC\
 
 cd %PROJECT_DIR%
 if [%BUILD_X86%]==[1] (

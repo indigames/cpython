@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 2.8.12)
 
+file(TO_CMAKE_PATH $ENV{IGE_LIBS} IGE_LIBS)
+
 project(Python)
 
-if (NOT DEFINED IGE_ROOT)
-  set(IGE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
-endif()
+file(TO_CMAKE_PATH $ENV{IGE_LIBS} IGE_LIBS)
 
 # [IGE]: tweaks for platforms
 if(DEFINED ANDROID_PLATFORM)
@@ -19,7 +19,7 @@ if(DEFINED ANDROID_PLATFORM)
         add_compile_options(-march=atom -m64 -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mfpmath=sse)
     endif()
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        add_compile_options(-Ofast)
+        add_compile_options(-g0 -Ofast)
     else(CMAKE_BUILD_TYPE STREQUAL "Debug")
         add_compile_options(-Og)
     endif()
@@ -94,29 +94,29 @@ endif()
 ### 02: _ssl
 if(MSVC)
     set(sslsrc ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ssl.c
-        ${IGE_ROOT}/igeLibs/openssl/libs/pc/x64/applink.c)
+        ${IGE_LIBS}/openssl/libs/pc/x64/applink.c)
     set(ssllib
-        ${IGE_ROOT}/igeLibs/openssl/libs/pc/x64/crypto.lib
-        ${IGE_ROOT}/igeLibs/openssl/libs/pc/x64/ssl.lib
+        ${IGE_LIBS}/openssl/libs/pc/x64/crypto.lib
+        ${IGE_LIBS}/openssl/libs/pc/x64/ssl.lib
     )
 elseif(OSX)
     set(sslsrc ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ssl.c)
     set(ssllib
-        ${IGE_ROOT}/igeLibs/openssl/libs/macos/x64/libcrypto.a
-        ${IGE_ROOT}/igeLibs/openssl/libs/macos/x64/libssl.a)
+        ${IGE_LIBS}/openssl/libs/macos/x64/libcrypto.a
+        ${IGE_LIBS}/openssl/libs/macos/x64/libssl.a)
 elseif(IOS)
     set(sslsrc ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ssl.c)
     set(ssllib
-        ${IGE_ROOT}/igeLibs/openssl/libs/ios/arm64/libcrypto.a
-        ${IGE_ROOT}/igeLibs/openssl/libs/ios/arm64/libssl.a)
+        ${IGE_LIBS}/openssl/libs/ios/arm64/libcrypto.a
+        ${IGE_LIBS}/openssl/libs/ios/arm64/libssl.a)
 elseif(ANDROID)
     set(sslsrc ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ssl.c)
     set(ssllib
-        ${IGE_ROOT}/igeLibs/openssl/libs/android/${ANDROID_ABI}/libssl.a
-        ${IGE_ROOT}/igeLibs/openssl/libs/android/${ANDROID_ABI}/libcrypto.a)
+        ${IGE_LIBS}/openssl/libs/android/${ANDROID_ABI}/libssl.a
+        ${IGE_LIBS}/openssl/libs/android/${ANDROID_ABI}/libcrypto.a)
 endif()
 add_library(_ssl ${BUILD_TYPE} ${sslsrc})
-target_include_directories(_ssl PRIVATE ${PYTHON_INCLUDE_DIRS} ${IGE_ROOT}/igeLibs/openssl/include)
+target_include_directories(_ssl PRIVATE ${PYTHON_INCLUDE_DIRS} ${IGE_LIBS}/openssl/include)
 target_link_libraries(_ssl ${ssllib})
 
 ### 03. _socket
@@ -173,9 +173,9 @@ target_include_directories(_asyncio PRIVATE ${PYTHON_INCLUDE_DIRS})
 
 ### 10. zlibmodule
 add_library(_zlib ${BUILD_TYPE} ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlibmodule.c)
-target_include_directories(_zlib PRIVATE ${PYTHON_INCLUDE_DIRS} ${IGE_ROOT}/igeLibs/zlib/include)
+target_include_directories(_zlib PRIVATE ${PYTHON_INCLUDE_DIRS} ${IGE_LIBS}/zlib/include)
 if(MSVC)
-    target_link_libraries(_zlib ${IGE_ROOT}/igeLibs/zlib/libs/pc/x64/zlib.lib)
+    target_link_libraries(_zlib ${IGE_LIBS}/zlib/libs/pc/x64/zlib.lib)
 endif()
 
 ### 11. Other modules and Python core
@@ -414,8 +414,8 @@ endif()
 target_compile_definitions(${PYTHON_LIB} PUBLIC ${DEFINITIONS})
 
 target_include_directories(${PYTHON_LIB} PUBLIC
-    ${IGE_ROOT}/igeLibs/pyxCore/include/pyxcore
-    ${IGE_ROOT}/igeLibs/igeCore/include
+    ${IGE_LIBS}/pyxCore/include/pyxcore
+    ${IGE_LIBS}/igeCore/include
     ${PYTHON_INCLUDE_DIRS}
     ${INCLUDES}
 )
