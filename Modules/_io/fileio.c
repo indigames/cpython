@@ -20,6 +20,12 @@
 #include <stddef.h> /* For offsetof */
 #include "_iomodule.h"
 
+// [IGE]: IGE FileIO
+#ifdef USE_IGE
+#include "pyxieFile.h"
+#endif
+// [/IGE]
+
 /*
  * Known likely problems:
  *
@@ -115,7 +121,14 @@ internal_close(fileio *self)
         /* fd is accessible and someone else may have closed it */
         Py_BEGIN_ALLOW_THREADS
         _Py_BEGIN_SUPPRESS_IPH
-        err = close(fd);
+// [IGE]: IGE FileIO
+#ifdef USE_IGE
+            if (fd >= DBDescripter)
+                err = pyxieClose(fd);
+            else
+#endif
+                err = close(fd);
+ // [/IGE]
         if (err < 0)
             save_errno = errno;
         _Py_END_SUPPRESS_IPH
@@ -381,8 +394,20 @@ _io_FileIO___init___impl(fileio *self, PyObject *nameobj, const char *mode,
                 Py_BEGIN_ALLOW_THREADS
 #ifdef MS_WINDOWS
                 self->fd = _wopen(widename, flags, 0666);
+// [IGE]: IGE FileIO
+#ifdef USE_IGE
+                if (self->fd < 0)
+                    self->fd = pyxieOpenW(widename, flags, 0666);
+#endif
+// [/IGE]
 #else
                 self->fd = open(name, flags, 0666);
+// [IGE]: IGE FileIO
+#ifdef USE_IGE
+                if (self->fd < 0)
+                    self->fd = pyxieOpen(name, flags, 0666);
+#endif
+// [/IGE]
 #endif
                 Py_END_ALLOW_THREADS
             } while (self->fd < 0 && errno == EINTR &&
@@ -471,7 +496,13 @@ _io_FileIO___init___impl(fileio *self, PyObject *nameobj, const char *mode,
 
 #if defined(MS_WINDOWS) || defined(__CYGWIN__)
     /* don't translate newlines (\r\n <=> \n) */
-    _setmode(self->fd, O_BINARY);
+
+// [IGE]: IGE FileIO
+#ifdef USE_IGE
+    if (self->fd < DBDescripter)
+#endif
+        _setmode(self->fd, O_BINARY);
+    // [/IGE]
 #endif
 
     if (_PyObject_SetAttrId((PyObject *)self, &PyId_name, nameobj) < 0)
@@ -696,6 +727,17 @@ _io_FileIO_readall_impl(fileio *self)
 
     Py_BEGIN_ALLOW_THREADS
     _Py_BEGIN_SUPPRESS_IPH
+
+// [IGE]: IGE FileIO
+#ifdef USE_IGE
+        if (self->fd >= DBDescripter)
+            pos = pyxieSeek(self->fd, 0L, SEEK_CUR);
+        else
+#endif
+// [/IGE]
+
+
+
 #ifdef MS_WINDOWS
     pos = _lseeki64(self->fd, 0L, SEEK_CUR);
 #else
@@ -910,6 +952,15 @@ portable_lseek(fileio *self, PyObject *posobj, int whence, bool suppress_pipe_er
 
     Py_BEGIN_ALLOW_THREADS
     _Py_BEGIN_SUPPRESS_IPH
+
+// [IGE]: IGE FileIO
+#ifdef USE_IGE
+        if (fd >= DBDescripter)
+            res = pyxieSeek(fd, pos, whence);
+        else
+#endif
+// [/IGE]
+
 #ifdef MS_WINDOWS
     res = _lseeki64(fd, pos, whence);
 #else

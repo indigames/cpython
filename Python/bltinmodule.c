@@ -9,6 +9,12 @@
 #include "pycore_pystate.h"      // _PyThreadState_GET()
 #include "pycore_tupleobject.h"
 
+// [IGE]: IGE Debug
+#ifdef USE_IGE
+#  include "pyxieDebug.h"
+#endif
+// [/IGE]
+
 _Py_IDENTIFIER(__builtins__);
 _Py_IDENTIFIER(__dict__);
 _Py_IDENTIFIER(__prepare__);
@@ -1838,6 +1844,20 @@ builtin_print(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject 
                                           &sep, &end, &file, &flush)) {
         return NULL;
     }
+
+// [IGE]: pyxie debug
+#ifdef USE_IGE 
+    for (i = 0; i < nargs; i++) {
+        if (i > 0) {
+            if (sep == NULL)
+                pyxie_printf(" ");
+            else
+                pyxie_printf(PyUnicode_DATA(sep));
+        }
+        pyxie_printf(PyUnicode_DATA(args[i]));
+    }
+#endif
+// [/IGE]
 
     if (file == NULL || file == Py_None) {
         file = _PySys_GetObjectId(&PyId_stdout);

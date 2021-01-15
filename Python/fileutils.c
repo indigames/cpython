@@ -3,6 +3,12 @@
 #include "osdefs.h"               // SEP
 #include <locale.h>
 
+// [IGE]: FileIO
+#ifdef USE_IGE
+#include "pyxieFile.h"
+#endif
+// [/IGE]
+
 #ifdef MS_WINDOWS
 #  include <malloc.h>
 #  include <windows.h>
@@ -908,6 +914,18 @@ _Py_attribute_data_to_stat(BY_HANDLE_FILE_INFORMATION *info, ULONG reparse_tag,
 int
 _Py_fstat_noraise(int fd, struct _Py_stat_struct *status)
 {
+// [IGE]: FileIO
+#ifdef USE_IGE
+    if (fd >= DBDescripter)
+    { //pyxie
+        struct stat statbuf;
+        int rv = pyxieStat(fd, &statbuf);
+        StatCpy(status, statbuf);
+        return rv;
+    }
+#endif
+// [/IGE]
+
 #ifdef MS_WINDOWS
     BY_HANDLE_FILE_INFORMATION info;
     HANDLE h;
@@ -1015,8 +1033,16 @@ _Py_stat(PyObject *path, struct stat *statbuf)
         return -2;
 
     err = _wstat(wpath, &wstatbuf);
+
+// [IGE]: FileIO
     if (!err)
         statbuf->st_mode = wstatbuf.st_mode;
+#ifdef USE_IGE
+    else
+        err = pyxieStatFromPathW(wpath, statbuf);
+#endif
+// [/IGE]
+
     return err;
 #else
     int ret;
@@ -1034,6 +1060,14 @@ _Py_stat(PyObject *path, struct stat *statbuf)
     }
 
     ret = stat(cpath, statbuf);
+
+ // [IGE]: FileIO
+#ifdef USE_IGE
+    if (ret)
+        ret = pyxieStatFromPathW(cpath, statbuf);
+#endif
+// [/IGE]
+
     Py_DECREF(bytes);
     return ret;
 #endif
@@ -1067,7 +1101,15 @@ get_inheritable(int fd, int raise)
 #else
     int flags;
 
-    flags = fcntl(fd, F_GETFD, 0);
+// [IGE]: FileIO
+#ifdef USE_IGE
+    if (fd >= DBDescripter)
+        flags = 1;
+    else
+#endif
+        flags = fcntl(fd, F_GETFD, 0);
+// [/IGE]
+
     if (flags == -1) {
         if (raise)
             PyErr_SetFromErrno(PyExc_OSError);
@@ -1286,6 +1328,12 @@ _Py_open_impl(const char *pathname, int flags, int gil_held)
         do {
             Py_BEGIN_ALLOW_THREADS
             fd = open(pathname, flags);
+// [IGE]: FileIO
+#ifdef USE_IGE
+            if (fd < 0)
+                fd = pyxieOpen(pathname, flags, 0);
+#endif
+// [/IGE]
             Py_END_ALLOW_THREADS
         } while (fd < 0
                  && errno == EINTR && !(async_err = PyErr_CheckSignals()));
@@ -1302,13 +1350,26 @@ _Py_open_impl(const char *pathname, int flags, int gil_held)
     }
     else {
         fd = open(pathname, flags);
+// [IGE]: FileIO
+#ifdef USE_IGE
+        if (fd < 0)
+            fd = pyxieOpen(pathname, flags, 0);
+#endif
+// [/IGE]
         if (fd < 0)
             return -1;
     }
 
 #ifndef MS_WINDOWS
     if (set_inheritable(fd, 0, gil_held, atomic_flag_works) < 0) {
-        close(fd);
+// [IGE]: FileIO
+#ifdef USE_IGE
+        if (fd >= DBDescripter)
+            pyxieClose(fd);
+        else
+#endif
+            close(fd);
+// [/IGE]
         return -1;
     }
 #endif
@@ -1539,12 +1600,19 @@ _Py_read(int fd, void *buf, size_t count)
     do {
         Py_BEGIN_ALLOW_THREADS
         errno = 0;
-#ifdef MS_WINDOWS
-        n = read(fd, buf, (int)count);
-#else
-        n = read(fd, buf, count);
+// [IGE]: FileIO
+#ifdef USE_IGE
+        if (fd >= DBDescripter)
+            n = pyxieRead(fd, buf, (int)count);
+        else
 #endif
-        /* save/restore errno because PyErr_CheckSignals()
+#ifdef MS_WINDOWS
+            n = read(fd, buf, (int)count);
+#else
+            n = read(fd, buf, count);
+#endif
+// [/IGE]
+            /* save/restore errno because PyErr_CheckSignals()
          * and PyErr_SetFromErrno() can modify it */
         err = errno;
         Py_END_ALLOW_THREADS
