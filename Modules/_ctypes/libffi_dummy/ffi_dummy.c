@@ -79,3 +79,13 @@ ffi_status ffi_prep_cif(/*@out@*/ /*@partial@*/ ffi_cif* cif,
 {
 	return FFI_BAD_TYPEDEF;
 }
+
+ffi_status
+ffi_prep_closure(
+	ffi_closure* closure,
+	ffi_cif* cif,
+	void			(*fun)(ffi_cif*, void*, void**, void*),
+	void* user_data)
+{
+	return FFI_OK;
+}

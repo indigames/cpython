@@ -234,6 +234,14 @@ ffi_prep_closure_loc (ffi_closure*,
 		  void *user_data,
 		  void *codeloc);
 
+ffi_status
+ffi_prep_closure(
+	ffi_closure* closure,
+	ffi_cif* cif,
+	void			(*fun)(ffi_cif*, void*, void**, void*),
+	void* user_data);
+
+
 typedef struct {
   char tramp[FFI_TRAMPOLINE_SIZE];
 

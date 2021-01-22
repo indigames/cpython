@@ -16,7 +16,7 @@
 
 // [IGE]: IGE FileIO
 #ifdef USE_IGE
-#include "pyxieDebug.h"
+#include "pyxieFile.h"
 #endif
 // [/IGE]
 
@@ -1644,7 +1644,7 @@ _io_TextIOWrapper_write_impl(textio *self, PyObject *text)
 // [IGE]: IGE FileIO
 #ifdef USE_IGE
     void* data = PyUnicode_DATA(text);
-    pyxie_printf(data);
+    pyxiePrintf((const char*)data);
 #endif
 // [/IGE]
 

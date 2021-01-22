@@ -11,7 +11,7 @@
 
 // [IGE]: IGE Debug
 #ifdef USE_IGE
-#  include "pyxieDebug.h"
+#include "pyxieFile.h"
 #endif
 // [/IGE]
 
@@ -1850,11 +1850,11 @@ builtin_print(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject 
     for (i = 0; i < nargs; i++) {
         if (i > 0) {
             if (sep == NULL)
-                pyxie_printf(" ");
+                pyxiePrintf(" ");
             else
-                pyxie_printf(PyUnicode_DATA(sep));
+                pyxiePrintf((const char*)PyUnicode_DATA(sep));
         }
-        pyxie_printf(PyUnicode_DATA(args[i]));
+        pyxiePrintf((const char*)PyUnicode_DATA(args[i]));
     }
 #endif
 // [/IGE]
