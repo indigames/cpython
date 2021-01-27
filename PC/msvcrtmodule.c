@@ -413,7 +413,7 @@ msvcrt_CrtSetReportFile_impl(PyObject *module, int type, void *file)
     HANDLE res;
 
     _Py_BEGIN_SUPPRESS_IPH
-    res = _CrtSetReportFile(type, file);
+    // res = _CrtSetReportFile(type, file); /// [IGE]: hack to link debug build with release prebuilt libs
     _Py_END_SUPPRESS_IPH
 
     return res;
@@ -438,7 +438,7 @@ msvcrt_CrtSetReportMode_impl(PyObject *module, int type, int mode)
     int res;
 
     _Py_BEGIN_SUPPRESS_IPH
-    res = _CrtSetReportMode(type, mode);
+    // res = _CrtSetReportMode(type, mode); /// [IGE]: hack to link debug build with release prebuilt libs
     _Py_END_SUPPRESS_IPH
     if (res == -1)
         PyErr_SetFromErrno(PyExc_OSError);
