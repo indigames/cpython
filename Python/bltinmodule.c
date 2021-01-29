@@ -1871,12 +1871,9 @@ builtin_print(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject 
 #ifdef USE_IGE 
     for (i = 0; i < nargs; i++) {
         if (i > 0) {
-            if (sep == NULL)
-                pyxie_printf(" ");
-            else
-                pyxie_printf(PyUnicode_DATA(sep));
+            pyxie_printf(sep != NULL ? PyUnicode_DATA(sep) : " ");
         }
-        pyxie_printf(PyUnicode_DATA(args[i]));
+        pyxie_printf(args[i] != NULL && PyUnicode_Check(args[i]) ? PyUnicode_DATA(args[i]) : "");
     }
 #endif
 // [/IGE]
