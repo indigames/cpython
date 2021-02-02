@@ -4,6 +4,13 @@ project(Python)
 
 file(TO_CMAKE_PATH $ENV{IGE_LIBS} IGE_LIBS)
 
+
+IF (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set(OSX 1)
+ELSEIF(IOS_PLATFORM)
+    set(IOS 1)
+ENDIF()
+
 # [IGE]: tweaks for platforms
 if(DEFINED ANDROID_PLATFORM)
     set (ANDROID 1)
@@ -117,6 +124,7 @@ elseif(ANDROID)
         ${IGE_LIBS}/openssl/libs/android/${ANDROID_ABI}/libssl.a
         ${IGE_LIBS}/openssl/libs/android/${ANDROID_ABI}/libcrypto.a)
 endif()
+
 add_library(_ssl ${BUILD_TYPE} ${sslsrc})
 target_include_directories(_ssl PRIVATE ${PYTHON_INCLUDE_DIRS} ${IGE_LIBS}/openssl/include)
 target_link_libraries(_ssl ${ssllib})
@@ -240,7 +248,6 @@ ELSEIF(OSX)
         ${CMAKE_CURRENT_SOURCE_DIR}/Python/frozenmain.c
         ${CMAKE_CURRENT_SOURCE_DIR}/Modules/getpath.c
         ${CMAKE_CURRENT_SOURCE_DIR}/Modules/pwdmodule.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/Parser/pgen.c
         ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_posixsubprocess.c
     )
 ELSEIF(IOS)

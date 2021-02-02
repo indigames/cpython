@@ -1595,6 +1595,7 @@
 #define SOABI "cpython-37m-darwin"
 #define PLATFORM "IOS"
 #define __IOS__ 1
+#define PLATLIBDIR "lib"
 
 #endif /*Py_PYCONFIG_H*/
 

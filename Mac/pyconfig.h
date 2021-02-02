@@ -1594,6 +1594,7 @@
 #define PYTHONPATH "/usr/local"
 #define SOABI "cpython-37m-darwin"
 #define PLATFORM "OSX"
+#define PLATLIBDIR "lib"
 
 #endif /*Py_PYCONFIG_H*/
 
