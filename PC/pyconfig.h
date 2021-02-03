@@ -259,7 +259,6 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
 /*  All windows compilers that use this header support __declspec */
 #define HAVE_DECLSPEC_DLL
 
-// [IGE]: REM to avoid link failed with python37_d
 /* For an MSVC DLL, we can nominate the .lib files used by extensions */
 #ifdef MS_COREDLL
 #       if !defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_BUILTIN)
@@ -268,17 +267,16 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
                         /* So MSVC users need not specify the .lib
                         file in their Makefile (other compilers are
                         generally taken care of by distutils.) */
-//#                       if defined(_DEBUG)
-//#                               pragma comment(lib,"python39_d.lib")
-//#                       elif defined(Py_LIMITED_API)
-//#                               pragma comment(lib,"python3.lib")
-//#                       else
+#                       if defined(_DEBUG)
+#                               pragma comment(lib,"python39_d.lib")
+#                       elif defined(Py_LIMITED_API)
+#                               pragma comment(lib,"python3.lib")
+#                       else
 #                               pragma comment(lib,"python39.lib")
-//#                       endif /* _DEBUG */
+#                       endif /* _DEBUG */
 #               endif /* _MSC_VER */
 #       endif /* Py_BUILD_CORE */
 #endif /* MS_COREDLL */
-// [/IGE]
 
 #if defined(MS_WIN64)
 /* maintain "win32" sys.platform for backward compatibility of Python code,
@@ -313,12 +311,9 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
 #       endif
 #endif
 
-// [IGE]: REM to avoid link failed with python37_d
-// #ifdef _DEBUG
-// #       define Py_DEBUG
-// #endif
-// [/IGE]
-
+#ifdef _DEBUG
+#       define Py_DEBUG
+#endif
 
 
 #ifdef MS_WIN32
@@ -688,5 +683,7 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
 #define HAVE_X509_VERIFY_PARAM_SET1_HOST 1
 
 #define PLATLIBDIR "lib"
+
+#define _Py_HAVE_ZLIB 1
 
 #endif /* !Py_CONFIG_H */
