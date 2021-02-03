@@ -2,12 +2,12 @@
 #include <ffi.h>
 
 
-int can_return_struct_as_int(size_t s)
+static int can_return_struct_as_int(size_t s)
 {
 	return s == 1 || s == 2 || s == 4;
 }
 
-int can_return_struct_as_sint64(size_t s)
+static int can_return_struct_as_sint64(size_t s)
 {
 	return s == 8;
 }
