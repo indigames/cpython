@@ -112,3 +112,4 @@ Tools/ssl/win32
 gmon.out
 
 /igeLibs
+/Release

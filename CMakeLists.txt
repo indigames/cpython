@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(Python)
 
-file(TO_CMAKE_PATH $ENV{IGE_LIBS} IGE_LIBS)
-
 # [IGE]: tweaks for platforms
 if(DEFINED ANDROID_PLATFORM)
     set (ANDROID 1)
@@ -49,28 +47,6 @@ else()
     set(BUILD_TYPE OBJECT)
 endif()
 
-# [IGE]: use default runtime
-# Force static runtime libraries
-# if(MSVC)
-  # set(CompilerFlags
-        # CMAKE_CXX_FLAGS
-        # CMAKE_CXX_FLAGS_DEBUG
-        # CMAKE_CXX_FLAGS_RELEASE
-        # CMAKE_CXX_FLAGS_MINSIZEREL
-        # CMAKE_CXX_FLAGS_RELWITHDEBINFO
-        # CMAKE_C_FLAGS
-        # CMAKE_C_FLAGS_DEBUG
-        # CMAKE_C_FLAGS_RELEASE
-        # CMAKE_C_FLAGS_MINSIZEREL
-        # CMAKE_C_FLAGS_RELWITHDEBINFO
-        # )
-  # foreach(CompilerFlag ${CompilerFlags})
-      # string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-      # set(${CompilerFlag} "${${CompilerFlag}}" CACHE STRING "msvc compiler flags" FORCE)
-      # message("MSVC flags: ${CompilerFlag}:${${CompilerFlag}}")
-  # endforeach()
-# endif()
-# [/IGE]
 
 ################# BUILT-IN MODULES ########################
 
@@ -94,32 +70,12 @@ if(ANDROID OR IOS)
 endif()
 
 ### 02: _ssl
+set(sslsrc ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ssl.c)
 if(MSVC)
-    set(sslsrc ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ssl.c
-        ${IGE_LIBS}/openssl/libs/pc/x64/applink.c)
-    set(ssllib
-        ${IGE_LIBS}/openssl/libs/pc/x64/crypto.lib
-        ${IGE_LIBS}/openssl/libs/pc/x64/ssl.lib
-    )
-elseif(OSX)
-    set(sslsrc ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ssl.c)
-    set(ssllib
-        ${IGE_LIBS}/openssl/libs/macos/x64/libcrypto.a
-        ${IGE_LIBS}/openssl/libs/macos/x64/libssl.a)
-elseif(IOS)
-    set(sslsrc ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ssl.c)
-    set(ssllib
-        ${IGE_LIBS}/openssl/libs/ios/arm64/libcrypto.a
-        ${IGE_LIBS}/openssl/libs/ios/arm64/libssl.a)
-elseif(ANDROID)
-    set(sslsrc ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ssl.c)
-    set(ssllib
-        ${IGE_LIBS}/openssl/libs/android/${ANDROID_ABI}/libssl.a
-        ${IGE_LIBS}/openssl/libs/android/${ANDROID_ABI}/libcrypto.a)
+    list(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/openssl/libs/pc/x64/applink.c)    
 endif()
 add_library(_ssl ${BUILD_TYPE} ${sslsrc})
-target_include_directories(_ssl PRIVATE ${PYTHON_INCLUDE_DIRS} ${IGE_LIBS}/openssl/include)
-target_link_libraries(_ssl ${ssllib})
+target_include_directories(_ssl PRIVATE ${PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/openssl/include)
 
 ### 03. _socket
 add_library(_socket ${BUILD_TYPE} ${CMAKE_CURRENT_SOURCE_DIR}/Modules/socketmodule.c)
@@ -157,7 +113,6 @@ set(CTYPES_INCLUDES
 add_library(_ctypes ${BUILD_TYPE} ${PYTHON_INCLUDE_DIRS} ${CTYPES_SOURCE})
 target_include_directories(_ctypes PRIVATE ${CTYPES_INCLUDES})
 
-
 ### 08. pyexpat
 add_library(_pyexpat ${BUILD_TYPE} ${CMAKE_CURRENT_SOURCE_DIR}/Modules/pyexpat.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/expat/xmlparse.c
@@ -175,10 +130,7 @@ target_include_directories(_asyncio PRIVATE ${PYTHON_INCLUDE_DIRS})
 
 ### 10. zlibmodule
 add_library(_zlib ${BUILD_TYPE} ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlibmodule.c)
-target_include_directories(_zlib PRIVATE ${PYTHON_INCLUDE_DIRS} ${IGE_LIBS}/zlib/include)
-if(MSVC)
-    target_link_libraries(_zlib ${IGE_LIBS}/zlib/libs/pc/x64/zlib.lib)
-endif()
+target_include_directories(_zlib PRIVATE ${PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/zlib/include)
 
 ### 11. Other modules and Python core
 IF(MSVC)
@@ -416,8 +368,7 @@ endif()
 target_compile_definitions(${PYTHON_LIB} PUBLIC ${DEFINITIONS})
 
 target_include_directories(${PYTHON_LIB} PUBLIC
-    ${IGE_LIBS}/pyxCore/include/pyxcore
-    ${IGE_LIBS}/igeCore/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/igeCore/include
     ${PYTHON_INCLUDE_DIRS}
     ${INCLUDES}
 )

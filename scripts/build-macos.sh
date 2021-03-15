@@ -13,16 +13,15 @@ then
     export WORKSPACE=$SCRIPT_DIR/..;
 fi
 
+export CURR_DIR=$PWD
 export PROJECT_DIR=$WORKSPACE
+export BUILD_DIR=$PROJECT_DIR/build/macos
+export OUTPUT_DIR==$PROJECT_DIR/Release/libs/macos
+
 export NCORES=$(sysctl -n hw.ncpu)
 export PATH="$PATH:/usr/local/bin"
 
-# IGE_LIBS evironment variable, eg. 'echo export IGE_LIBS=/Volumes/Projects/igeEngine/igeLibs > ~/.bash_profile'
-# export IGE_LIBS=$PROJECT_DIR/../igeLibs
-
-export BUILD_DIR=$PROJECT_DIR/build/macos
-export OUTPUT_DIR=$IGE_LIBS/$LIB_NAME/libs/macos
-
+echo Compiling macOS...
 [ ! -d "$BUILD_DIR" ] && mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 cmake $PROJECT_DIR -G Xcode -DOSX=1
@@ -33,8 +32,8 @@ if [ $? -ne 0 ]; then
 fi
 
 [ ! -d "$OUTPUT_DIR/arm64" ] && mkdir -p $OUTPUT_DIR/x64
-cp -R -f -p ./Release/*.a $OUTPUT_DIR/x64
-cp -R -f -p ./Release/*.so $OUTPUT_DIR/x64
+find . -name \*.a -exec cp {} $OUTPUT_DIR/x64 \;
+find . -name \*.so -exec cp {} $OUTPUT_DIR/x64 \;
 
 echo DONE!
 cd $CURR_DIR
