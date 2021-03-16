@@ -16,7 +16,7 @@ export OUTPUT_DIR==$PROJECT_DIR/Release/libs/ios
 
 export NCORES=$(sysctl -n hw.ncpu)
 export PATH="$PATH:/usr/local/bin"
-export CMAKE_TOOLCHAIN_FILE=$CURR_DIR/cmake/ios.toolchain.cmake
+export CMAKE_TOOLCHAIN_FILE=$PROJECT_DIR/scripts/cmake/ios.toolchain.cmake
 
 echo Compiling iOS...
 [ ! -d "$BUILD_DIR" ] && mkdir -p $BUILD_DIR
