@@ -11,7 +11,7 @@ fi
 
 export CURR_DIR=$PWD
 export PROJECT_DIR=$WORKSPACE
-export OUTPUT_DIR==$PROJECT_DIR/Release/include
+export OUTPUT_DIR=$PROJECT_DIR/Release/include
 
 echo Cleanup...
 [ -d "$OUTPUT_DIR" ] && rm -rf $OUTPUT_DIR

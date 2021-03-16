@@ -16,7 +16,7 @@ fi
 export CURR_DIR=$PWD
 export PROJECT_DIR=$WORKSPACE
 export BUILD_DIR=$PROJECT_DIR/build/macos
-export OUTPUT_DIR==$PROJECT_DIR/Release/libs/macos
+export OUTPUT_DIR=$PROJECT_DIR/Release/libs/macos
 
 export NCORES=$(sysctl -n hw.ncpu)
 export PATH="$PATH:/usr/local/bin"
