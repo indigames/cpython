@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-project(Python)
+project(Python37)
+
+# [IGE]: try include conan build config
+if(EXISTS ${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+    include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+    conan_basic_setup()
+endif()
+# [/IGE]
 
 # [IGE]: tweaks for platforms
 if(DEFINED ANDROID_PLATFORM)
