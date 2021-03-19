@@ -15,35 +15,24 @@ class IgePython37Conan(ConanFile):
     generators = "cmake"
     exports_sources = "*"
 
-    def config_options(self):
-        if self.settings.os == "Windows":
-            del self.options.fPIC
-
-    def build(self):
-        cmake = CMake(self)
-        cmake.configure()
-        cmake.build()
-
-        # Explicit way:
-        # self.run('cmake %s/hello %s'
-        #          % (self.source_folder, cmake.command_line))
-        # self.run("cmake --build . %s" % cmake.build_config)
-
     def package(self):
-        self.copy("*.h", dst="include", src="Include")
+        self.copy("*.h", dst="include", src="Release/include")
         if self.settings.os == "Windows":
-            self.copy("*.h", dst="include", src="PC")
+            self.copy("*.h", dst="include", src="Release/include/PC")
+            self.copy("*.lib", dst="lib", keep_path=False, src="Release/libs/pc/x64")
+            self.copy("*.dll", dst="bin", keep_path=False, src="Release/libs/pc/x64")
         elif self.settings.os == "Macos":
-            self.copy("*.h", dst="include", src="Mac")
+            self.copy("*.h", dst="include", src="Release/include/Mac")
+            self.copy("*.so", dst="lib", keep_path=False, src="Release/libs/macos/x64")
+            self.copy("*.a", dst="bin", keep_path=False, src="Release/libs/macos/x64")
         elif self.settings.os == "Android":
-            self.copy("*.h", dst="include", src="Android")
+            self.copy("*.h", dst="include", src="Release/include/Android")
+            self.copy("*.so", dst="lib", keep_path=False, src="Release/libs/android/arm64-v8a")
+            self.copy("*.a", dst="bin", keep_path=False, src="Release/libs/android/arm64-v8a")
         else:
-            self.copy("*.h", dst="include", src="IOS")
-        self.copy("*.lib", dst="lib", keep_path=False)
-        self.copy("*.dll", dst="bin", keep_path=False)
-        self.copy("*.dylib*", dst="lib", keep_path=False)
-        self.copy("*.so", dst="lib", keep_path=False)
-        self.copy("*.a", dst="lib", keep_path=False)
+            self.copy("*.h", dst="include", src="Release/include/IOS")
+            self.copy("*.so", dst="lib", keep_path=False, src="Release/libs/ios/arm64")
+            self.copy("*.a", dst="lib", keep_path=False, src="Release/libs/ios/arm64")
 
     def package_info(self):
         self.cpp_info.libs = ["Python37"]
