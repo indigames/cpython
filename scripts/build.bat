@@ -5,12 +5,16 @@ set CALL_DIR=%CD%
 
 if "%IGE_BUILDER%"=="" (
     set IGE_BUILDER=%APPDATA%\indigames\igeBuilder
-    if not exist "!IGE_BUILDER!" (
-        mkdir "!IGE_BUILDER!"
-    )
-    git clone https://github.com/indigames/igeBuilder !IGE_BUILDER!
-    
 )
+
+if not exist "!IGE_BUILDER!\.git" (
+    mkdir "!IGE_BUILDER!"
+    git clone https://github.com/indigames/igeBuilder !IGE_BUILDER!
+) else (
+    git checkout main
+    git pull origin main
+)
+
 
 if not exist "!IGE_BUILDER!\build-lib.bat" (
     echo ERROR: IGE_BUILDER was not found
@@ -54,13 +58,11 @@ if %ERRORLEVEL% NEQ 0 goto ERROR
 call !IGE_BUILDER!\build-lib.bat . !PROJECT_NAME! !PROJECT_VER! android armv8
 if %ERRORLEVEL% NEQ 0 goto ERROR
 
-goto ALL_DONE
+cd %CALL_DIR%
+echo ALL DONE!
+goto :eof
 
 :ERROR
     cd %CALL_DIR%
     echo ERROR OCCURED DURING COMPILING!
     exit /b 1
-
-:ALL_DONE
-    cd %CALL_DIR%
-    echo COMPILING DONE!
