@@ -11,8 +11,10 @@ if not exist "!IGE_BUILDER!\.git" (
     mkdir "!IGE_BUILDER!"
     git clone https://github.com/indigames/igeBuilder !IGE_BUILDER!
 ) else (
+    cd !IGE_BUILDER!
+    git fetch --all
     git checkout main
-    git pull origin main
+    git pull
 )
 
 
@@ -40,6 +42,7 @@ if exist "%~dp0..\project.conf" (
 
 echo !PROJECT_NAME!_!PROJECT_VER!
 
+cd %CALL_DIR%
 call !IGE_BUILDER!\build-lib.bat . !PROJECT_NAME! !PROJECT_VER! windows x86
 if %ERRORLEVEL% NEQ 0 goto ERROR
 
