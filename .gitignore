@@ -112,3 +112,7 @@ Tools/ssl/win32
 gmon.out
 
 /igeLibs
+/Release
+/_ige_build
+/_ige_release
+conanfile.py

@@ -11,9 +11,13 @@
 #include "structmember.h"
 #include "_iomodule.h"
 
-// [IGE]: IGE FileIO
+// [IGE]: IGE Debug
 #ifdef USE_IGE
-    #include "pyxieDebug.h"
+    #ifdef _WIN32
+        extern void __declspec(dllexport) pyxie_printf(const char* format, ...);
+    #else
+        extern void pyxie_printf(const char* format, ...);
+    #endif
 #endif
 // [/IGE]
 
