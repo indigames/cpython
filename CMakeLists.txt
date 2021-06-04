@@ -80,7 +80,7 @@ endif()
 ### 02: _ssl
 set(sslsrc ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ssl.c)
 if(MSVC)
-    list(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/openssl/libs/pc/x64/applink.c)    
+    list(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/openssl/libs/pc/x64/applink.c)
 endif()
 add_library(_ssl ${BUILD_TYPE} ${sslsrc})
 target_include_directories(_ssl PRIVATE ${PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/openssl/include)
@@ -395,15 +395,19 @@ target_link_libraries(${PYTHON_LIB}
 )
 
 # Install Targets
-file(GLOB_RECURSE PUBLIC_INCLUDE_FILES "Include/*.h*")
-set_target_properties(${PYTHON_LIB} PROPERTIES PUBLIC_HEADER "${PUBLIC_INCLUDE_FILES}")
+file(GLOB_RECURSE PUBLIC_INCLUDE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/Include/*.h*")
 install(TARGETS
     ${PYTHON_LIB}
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
-    PUBLIC_HEADER DESTINATION include
 )
+
+foreach(HEADER ${PUBLIC_INCLUDE_FILES})
+    file(RELATIVE_PATH HEADER_RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/Include/" "${HEADER}")
+    get_filename_component(DIR ${HEADER_RELATIVE} DIRECTORY)
+    install(FILES ${HEADER} DESTINATION include/${DIR})
+endforeach(HEADER HEADERS)
 
 if(DEFINED ANDROID_PLATFORM)
     set(CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Android/pyconfig.h")
@@ -415,9 +419,5 @@ else()
     set(CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/PC/pyconfig.h")
 endif()
 
-install(FILES
-    ${CONFIG_FILE}
-  DESTINATION 
-    include)
-    
+install(FILES ${CONFIG_FILE} DESTINATION include)
 
