@@ -50,4 +50,4 @@ class IgeConan(ConanFile):
     def _upload(self):
         os.chdir(Path(self.build_folder).parent.absolute())
         self.run(f'conan export-pkg . {self.name}/{self.version}@ige/test --profile=cmake/profiles/{self.settings.os}_{self.settings.arch} --force')
-        self.run(f'conan upload {self.name}/{self.version}@ige/test --remote ige-center --force --confirm')
+        self.run(f'conan upload {self.name}/{self.version}@ige/test --all --remote ige-center --force --confirm')
