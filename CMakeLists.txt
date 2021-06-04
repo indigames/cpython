@@ -3,6 +3,14 @@ cmake_minimum_required(VERSION 2.8.12)
 project(Python37)
 
 # [IGE]: tweaks for platforms
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+
+# Modules and install path (required by conan)
+set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install)
+set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH})
+set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR} ${CMAKE_PREFIX_PATH})
+
 if(DEFINED ANDROID_PLATFORM)
     set (ANDROID 1)
     if(ANDROID_ABI STREQUAL "armeabi-v7a")
@@ -385,3 +393,31 @@ target_link_libraries(${PYTHON_LIB}
     _asyncio
     _zlib
 )
+
+# Install Targets
+file(GLOB_RECURSE PUBLIC_INCLUDE_FILES "Include/*.h*")
+set_target_properties(${PYTHON_LIB} PROPERTIES PUBLIC_HEADER "${PUBLIC_INCLUDE_FILES}")
+install(TARGETS
+    ${PYTHON_LIB}
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    PUBLIC_HEADER DESTINATION include
+)
+
+if(DEFINED ANDROID_PLATFORM)
+    set(CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Android/pyconfig.h")
+elseif(IOS)
+    set(CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/IOS/pyconfig.h")
+elseif(APPLE)
+    set(CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Mac/pyconfig.h")
+else()
+    set(CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/PC/pyconfig.h")
+endif()
+
+install(FILES
+    ${CONFIG_FILE}
+  DESTINATION 
+    include)
+    
+

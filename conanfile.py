@@ -1,5 +1,6 @@
 import os
-from conans import ConanFile, CMake
+from pathlib import Path
+from conans import ConanFile
 
 class IgeConan(ConanFile):
     name = 'Python'
@@ -12,7 +13,7 @@ class IgeConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": False, "fPIC": True}
-    generators = "cmake"
+    generators = "cmake_find_package"
     exports_sources = ""
     requires = []
     short_paths = True
@@ -21,62 +22,32 @@ class IgeConan(ConanFile):
         if (self.settings.os == "Windows") and (self.name != "zlib"):
             self.requires("zlib/1.2.11@ige/test")
 
-    def package(self):
-        output_dir = os.path.normpath(os.path.relpath(os.environ['OUTPUT_DIR'], os.environ['PROJECT_DIR']))
-        self.copy("*", dst="include", src=os.path.join(output_dir, "include"))
+    def build(self):
         if self.settings.os == "Windows":
             if self.settings.arch == "x86":
-                self.copy("*", dst="lib", src=os.path.join(output_dir, "libs/windows/x86"))
+                self.run(f'cmake {self.source_folder} -A Win32')
             else:
-                self.copy("*", dst="lib", src=os.path.join(output_dir, "libs/windows/x86_64"))
+                self.run(f'cmake {self.source_folder} -A X64')
         elif self.settings.os == "Android":
+            toolchain = Path(os.environ.get("ANDROID_NDK_ROOT")).absolute().as_posix() + '/build/cmake/android.toolchain.cmake'
             if self.settings.arch == "armv7":
-                self.copy("*", dst="lib", src=os.path.join(output_dir, "libs/android/armv7"))
-            elif self.settings.arch == "armv8":
-                self.copy("*", dst="lib", src=os.path.join(output_dir, "libs/android/armv8"))
-            elif self.settings.arch == "x86":
-                self.copy("*", dst="lib", src=os.path.join(output_dir, "libs/android/x86"))
-            elif self.settings.arch == "x86_64":
-                self.copy("*", dst="lib", src=os.path.join(output_dir, "libs/android/x86_64"))
+                self.run(f'cmake {self.source_folder} -G Ninja -DCMAKE_TOOLCHAIN_FILE={toolchain} -DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=android-21 -DCMAKE_BUILD_TYPE=Release')
+            else:
+                self.run(f'cmake {self.source_folder} -G Ninja -DCMAKE_TOOLCHAIN_FILE={toolchain} -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-21 -DCMAKE_BUILD_TYPE=Release')
+        elif self.settings.os == "iOS":
+            toolchain = Path(self.source_folder).absolute().as_posix() + '/cmake/ios.toolchain.cmake'
+            self.run(f'cmake {self.source_folder} -G Xcode -DCMAKE_TOOLCHAIN_FILE={toolchain} -DIOS_DEPLOYMENT_TARGET=11.0 -DPLATFORM=OS64 -DCMAKE_BUILD_TYPE=Release')
         elif self.settings.os == "Macos":
-            self.copy("*", dst="lib", src=os.path.join(output_dir, "libs/macos/x64"))
+            self.run(f'cmake {self.source_folder} -G Xcode -DOSX=1 -DCMAKE_BUILD_TYPE=Release')
         else:
-            self.copy("*", dst="lib", src=os.path.join(output_dir, "libs/ios/arm64"))
+            pass
+        self.run('cmake --build . --config Release --target install')
+        self._upload()
 
-    def package_info(self):
-        self.cpp_info.libs = self.__collect_lib('lib')
-        self.cpp_info.includedirs  = self.__collect_include('include')
-        self.cpp_info.defines = [f'USE_{self.name}'.upper()]
+    def package(self):
+        self.copy('*', src='build/install')
 
-    def __collect_lib(self, lib_dir):
-        libs = []
-        for root, dirs, files in os.walk(lib_dir):
-            for file in files:
-                if file.endswith(".lib"):
-                    fname = os.path.splitext(file)[0]
-                    libs.append(fname)
-                elif file.endswith(".a"):
-                    fname = os.path.splitext(file)[0]
-                    if fname.startswith('lib'):
-                        fname = fname[fname.find('lib') + 3:]
-                    libs.append(fname)
-        if (self.settings.os == "Windows") and (self.name != "zlib"):
-            libs.append('zlibstatic')
-        return libs
-
-    def __collect_include(self, inc_dir):
-        inc_dirs = ['include']
-        platform_inc_dir = ['include', 'src', 'source']
-        if self.settings.os == "Windows":
-            platform_inc_dir += ['pc', 'windows', 'win32', 'msvc']
-        elif self.settings.os == "Android":
-            platform_inc_dir += ['android']
-        elif self.settings.os == "Macos":
-            platform_inc_dir += ['macos', 'mac', 'osx']
-        else:
-            platform_inc_dir += ['ios']
-        for root, dirs, files in os.walk(inc_dir):
-            for d in dirs:
-                if d.lower() in platform_inc_dir:
-                    inc_dirs.append(os.path.relpath(os.path.join('include', root, d), inc_dir).replace('\\', '/'))
-        return inc_dirs
+    def _upload(self):
+        os.chdir(Path(self.build_folder).parent.absolute())
+        self.run(f'conan export-pkg . {self.name}/{self.version}@ige/test --profile=cmake/profiles/{self.settings.os}_{self.settings.arch} --force')
+        self.run(f'conan upload {self.name}/{self.version}@ige/test --remote ige-center --force --confirm')
