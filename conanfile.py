@@ -23,31 +23,55 @@ class IgeConan(ConanFile):
             self.requires("zlib/1.2.11@ige/test")
 
     def build(self):
-        if self.settings.os == "Windows":
-            if self.settings.arch == "x86":
-                self.run(f'cmake {self.source_folder} -A Win32')
-            else:
-                self.run(f'cmake {self.source_folder} -A X64')
-        elif self.settings.os == "Android":
-            toolchain = Path(os.environ.get("ANDROID_NDK_ROOT")).absolute().as_posix() + '/build/cmake/android.toolchain.cmake'
-            if self.settings.arch == "armv7":
-                self.run(f'cmake {self.source_folder} -G Ninja -DCMAKE_TOOLCHAIN_FILE={toolchain} -DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=android-21 -DCMAKE_BUILD_TYPE=Release')
-            else:
-                self.run(f'cmake {self.source_folder} -G Ninja -DCMAKE_TOOLCHAIN_FILE={toolchain} -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-21 -DCMAKE_BUILD_TYPE=Release')
-        elif self.settings.os == "iOS":
-            toolchain = Path(self.source_folder).absolute().as_posix() + '/cmake/ios.toolchain.cmake'
-            self.run(f'cmake {self.source_folder} -G Xcode -DCMAKE_TOOLCHAIN_FILE={toolchain} -DIOS_DEPLOYMENT_TARGET=11.0 -DPLATFORM=OS64 -DCMAKE_BUILD_TYPE=Release')
-        elif self.settings.os == "Macos":
-            self.run(f'cmake {self.source_folder} -G Xcode -DOSX=1 -DCMAKE_BUILD_TYPE=Release')
-        else:
-            pass
-        self.run('cmake --build . --config Release --target install')
+        self._generateCMakeProject()
+        self._buildCMakeProject()
         self._upload()
 
     def package(self):
         self.copy('*', src='build/install')
 
+    def _generateCMakeProject(self):
+        cmake_cmd = f'cmake {self.source_folder}'
+        if self.settings.os == "Windows":
+            if self.settings.arch == "x86":
+                cmake_cmd += f' -A Win32'
+            else:
+                cmake_cmd += f' -A X64'
+        elif self.settings.os == "Android":
+            toolchain = Path(os.environ.get("ANDROID_NDK_ROOT")).absolute().as_posix() + '/build/cmake/android.toolchain.cmake'
+            if self.settings.arch == "armv7":
+                cmake_cmd += f' -G Ninja -DCMAKE_TOOLCHAIN_FILE={toolchain} -DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=android-21 -DCMAKE_BUILD_TYPE=Release'
+            else:
+                cmake_cmd += f' -G Ninja -DCMAKE_TOOLCHAIN_FILE={toolchain} -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-21 -DCMAKE_BUILD_TYPE=Release'
+        elif self.settings.os == "iOS":
+            toolchain = Path(self.source_folder).absolute().as_posix() + '/cmake/ios.toolchain.cmake'
+            cmake_cmd += f' -G Xcode -DCMAKE_TOOLCHAIN_FILE={toolchain} -DIOS_DEPLOYMENT_TARGET=11.0 -DPLATFORM=OS64 -DCMAKE_BUILD_TYPE=Release'
+        elif self.settings.os == "Macos":
+            cmake_cmd += f' -G Xcode -DOSX=1 -DCMAKE_BUILD_TYPE=Release'
+        else:
+            print(f'Configuration not supported: platform = {self.settings.os}, arch = {self.settings.arch}')
+            os.exit(1)
+
+        error_code = self.run(cmake_cmd, ignore_errors=True)
+        if(error_code != 0):
+            print(f'CMake generation failed, error code: {error_code}')
+            os.exit(1)
+
+    def _buildCMakeProject(self):
+        error_code = self.run('cmake --build . --config Release --target install', ignore_errors=True)
+        if(error_code != 0):
+            print(f'CMake build failed, error code: {error_code}')
+            os.exit(1)
+
     def _upload(self):
         os.chdir(Path(self.build_folder).parent.absolute())
-        self.run(f'conan export-pkg . {self.name}/{self.version}@ige/test --profile=cmake/profiles/{str(self.settings.os).lower()}_{str(self.settings.arch).lower()} --force')
-        self.run(f'conan upload {self.name}/{self.version}@ige/test --all --remote ige-center --force --confirm')
+        error_code = self.run(f'conan export-pkg . {self.name}/{self.version}@ige/test --profile=cmake/profiles/{str(self.settings.os).lower()}_{str(self.settings.arch).lower()} --force', ignore_errors=True)
+        if(error_code != 0):
+            print(f'Conan export failed, error code: {error_code}')
+            os.exit(1)
+
+        error_code =self.run(f'conan upload {self.name}/{self.version}@ige/test --all --remote ige-center --force --confirm', ignore_errors=True)
+        if(error_code != 0):
+            print(f'Conan upload failed, error code: {error_code}')
+            os.exit(1)
+
