@@ -39,6 +39,10 @@ def build(platform, arch):
     if ret_code != 0:
         exit(1)
 
+    ret_code = os.system(f'conan upload {IgeConan.name}/{IgeConan.version}@ige/test --remote ige-center --check --confirm --retry 3 --retry-wait 60')
+    if ret_code != 0:
+        exit(1)
+
 def main():
     setEnv('CONAN_REVISIONS_ENABLED', '1')
     if platform.system() == 'Windows':
@@ -51,8 +55,6 @@ def main():
     elif platform.system() == 'Darwin':
         build('macos', 'x86_64')
         build('ios', 'armv8')
-    ret_code = os.system(f'conan upload {IgeConan.name}/{IgeConan.version}@ige/test --all --remote ige-center --check --confirm --retry 3 --retry-wait 60')
-    exit(ret_code)
 
 if __name__ == "__main__":
     main()
