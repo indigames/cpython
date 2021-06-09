@@ -44,10 +44,15 @@ def main():
     if platform.system() == 'Windows':
         build('windows', 'x86')
         build('windows', 'x86_64')
-        ret_code = os.system(f'conan upload {IgeConan.name}/{IgeConan.version}@ige/test --all --remote ige-center --check --confirm --retry 3 --retry-wait 60')
-        if ret_code != 0:
-            exit(1)
-    exit(0)
+        build('android', 'x86')
+        build('android', 'x86_64')
+        build('android', 'armv7')
+        build('android', 'armv8')
+    elif platform.system() == 'Darwin':
+        build('macos', 'x86_64')
+        build('ios', 'armv8')
+    ret_code = os.system(f'conan upload {IgeConan.name}/{IgeConan.version}@ige/test --all --remote ige-center --check --confirm --retry 3 --retry-wait 60')
+    exit(ret_code)
 
 if __name__ == "__main__":
     main()
