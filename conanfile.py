@@ -17,6 +17,7 @@ class IgeConan(ConanFile):
     exports_sources = ""
     requires = []
     short_paths = True
+    revision_mode="scm"
 
     def requirements(self):
         if (self.settings.os == "Windows") and (self.name != "zlib"):
