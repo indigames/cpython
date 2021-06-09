@@ -51,7 +51,7 @@ def main():
     elif platform.system() == 'Darwin':
         build('macos', 'x86_64')
         build('ios', 'armv8')
-    ret_code = os.system(f'conan upload {IgeConan.name}/{IgeConan.version}@ige/test --remote ige-center  --all --no-overwrite --check --confirm --retry 3 --retry-wait 60')
+    ret_code = os.system(f'conan upload {IgeConan.name}/{IgeConan.version}@ige/test --remote ige-center  --all --no-overwrite --check --confirm --retry 3 --retry-wait 60 --force')
     if ret_code != 0:
         exit(1)
 
