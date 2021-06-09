@@ -35,7 +35,7 @@ def build(platform, arch):
     if ret_code != 0:
         exit(1)
 
-    ret_code = os.system(f'conan export-pkg . {IgeConan.name}/{IgeConan.version}@ige/test --build-folder build')
+    ret_code = os.system(f'conan export-pkg . {IgeConan.name}/{IgeConan.version}@ige/test --build-folder build --force')
     if ret_code != 0:
         exit(1)
 
