@@ -2,16 +2,15 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(Python)
 
-file(TO_CMAKE_PATH $ENV{IGE_LIBS} IGE_LIBS)
-
-
-IF (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set(OSX 1)
-ELSEIF(IOS_PLATFORM)
-    set(IOS 1)
-ENDIF()
-
 # [IGE]: tweaks for platforms
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+
+# Modules and install path (required by conan)
+set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install)
+set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH})
+set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR} ${CMAKE_PREFIX_PATH})
+
 if(DEFINED ANDROID_PLATFORM)
     set (ANDROID 1)
     if(ANDROID_ABI STREQUAL "armeabi-v7a")
@@ -56,28 +55,6 @@ else()
     set(BUILD_TYPE OBJECT)
 endif()
 
-# [IGE]: use default runtime
-# Force static runtime libraries
-# if(MSVC)
-  # set(CompilerFlags
-        # CMAKE_CXX_FLAGS
-        # CMAKE_CXX_FLAGS_DEBUG
-        # CMAKE_CXX_FLAGS_RELEASE
-        # CMAKE_CXX_FLAGS_MINSIZEREL
-        # CMAKE_CXX_FLAGS_RELWITHDEBINFO
-        # CMAKE_C_FLAGS
-        # CMAKE_C_FLAGS_DEBUG
-        # CMAKE_C_FLAGS_RELEASE
-        # CMAKE_C_FLAGS_MINSIZEREL
-        # CMAKE_C_FLAGS_RELWITHDEBINFO
-        # )
-  # foreach(CompilerFlag ${CompilerFlags})
-      # string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-      # set(${CompilerFlag} "${${CompilerFlag}}" CACHE STRING "msvc compiler flags" FORCE)
-      # message("MSVC flags: ${CompilerFlag}:${${CompilerFlag}}")
-  # endforeach()
-# endif()
-# [/IGE]
 
 ################# BUILT-IN MODULES ########################
 
@@ -101,37 +78,14 @@ if(ANDROID OR IOS)
 endif()
 
 ### 02: _ssl
-if(MSVC)
-    set(sslsrc ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ssl.c
-        ${IGE_LIBS}/openssl/libs/pc/x64/applink.c)
-    set(ssllib
-        ${IGE_LIBS}/openssl/libs/pc/x64/crypto.lib
-        ${IGE_LIBS}/openssl/libs/pc/x64/ssl.lib
-    )
-elseif(OSX)
-    set(sslsrc ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ssl.c)
-    set(ssllib
-        ${IGE_LIBS}/openssl/libs/macos/x64/libcrypto.a
-        ${IGE_LIBS}/openssl/libs/macos/x64/libssl.a)
-elseif(IOS)
-    set(sslsrc ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ssl.c)
-    set(ssllib
-        ${IGE_LIBS}/openssl/libs/ios/arm64/libcrypto.a
-        ${IGE_LIBS}/openssl/libs/ios/arm64/libssl.a)
-elseif(ANDROID)
-    set(sslsrc ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ssl.c)
-    set(ssllib
-        ${IGE_LIBS}/openssl/libs/android/${ANDROID_ABI}/libssl.a
-        ${IGE_LIBS}/openssl/libs/android/${ANDROID_ABI}/libcrypto.a)
-endif()
-
+set(sslsrc ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_ssl.c)
 add_library(_ssl ${BUILD_TYPE} ${sslsrc})
-target_include_directories(_ssl PRIVATE ${PYTHON_INCLUDE_DIRS} ${IGE_LIBS}/openssl/include)
-target_link_libraries(_ssl ${ssllib})
+find_package(openssl REQUIRED)
+target_include_directories(_ssl PRIVATE ${PYTHON_INCLUDE_DIRS} ${openssl_INCLUDE_DIRS})
 
 ### _hashlib
 add_library(_hashlib ${BUILD_TYPE} ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_hashopenssl.c)
-target_include_directories(_hashlib PRIVATE ${PYTHON_INCLUDE_DIRS} ${IGE_LIBS}/openssl/include)
+target_include_directories(_hashlib PRIVATE ${PYTHON_INCLUDE_DIRS} ${openssl_INCLUDE_DIRS})
 
 
 ### 03. _socket
@@ -191,39 +145,10 @@ target_compile_definitions(_asyncio PRIVATE Py_BUILD_CORE)
 
 ### 10. zlibmodule
 add_library(_zlib ${BUILD_TYPE} ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlibmodule.c)
-target_include_directories(_zlib PRIVATE ${PYTHON_INCLUDE_DIRS} ${IGE_LIBS}/zlib/include)
-if(MSVC)
-    target_link_libraries(_zlib ${IGE_LIBS}/zlib/libs/pc/x64/zlib.lib)
-endif()
-
-
-### _decimal
-add_library(_decimal ${BUILD_TYPE} 
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_decimal/_decimal.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_decimal/libmpdec/basearith.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_decimal/libmpdec/constants.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_decimal/libmpdec/context.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_decimal/libmpdec/convolute.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_decimal/libmpdec/crt.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_decimal/libmpdec/difradix2.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_decimal/libmpdec/fnt.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_decimal/libmpdec/fourstep.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_decimal/libmpdec/io.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_decimal/libmpdec/mpalloc.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_decimal/libmpdec/mpdecimal.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_decimal/libmpdec/numbertheory.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_decimal/libmpdec/sixstep.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_decimal/libmpdec/transpose.c
-)
-target_include_directories(_decimal PRIVATE ${PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_decimal/libmpdec)
-
-if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-	target_compile_definitions(_decimal PRIVATE CONFIG_64 ANSI)
-else()
-	target_compile_definitions(_decimal PRIVATE CONFIG_32 ANSI)
-endif()
-
-
+IF(MSVC)
+    find_package(zlib REQUIRED)
+ENDIF()
+target_include_directories(_zlib PRIVATE ${PYTHON_INCLUDE_DIRS} ${zlib_INCLUDE_DIRS})
 
 ### 11. Other modules and Python core
 IF(MSVC)
@@ -333,8 +258,8 @@ set(SOURCES ${SOURCES}
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_math.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_opcode.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_operator.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_peg_parser.c
-${CMAKE_CURRENT_SOURCE_DIR}/Modules/_pickle.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_peg_parser.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_pickle.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_randommodule.c
     #${CMAKE_CURRENT_SOURCE_DIR}/Modules/_scproxy.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_sre.c
@@ -354,15 +279,14 @@ ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_pickle.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_xxsubinterpretersmodule.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_zoneinfo.c
 
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_blake2/blake2module.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_blake2/blake2b_impl.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_blake2/blake2s_impl.c
-	
+    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_blake2/blake2module.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_blake2/blake2b_impl.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_blake2/blake2s_impl.c
 
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_multiprocessing/multiprocessing.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_multiprocessing/posixshmem.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_multiprocessing/semaphore.c
-	${CMAKE_CURRENT_SOURCE_DIR}/Modules/_sha3/sha3module.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_multiprocessing/multiprocessing.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_multiprocessing/posixshmem.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_multiprocessing/semaphore.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_sha3/sha3module.c
 
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_io/_iomodule.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_io/bufferedio.c
@@ -372,13 +296,12 @@ ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_pickle.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_io/stringio.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_io/textio.c
     #${CMAKE_CURRENT_SOURCE_DIR}/Modules/_io/winconsoleio.c
-	
+
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/_codecs_cn.c	
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/_codecs_iso2022.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/_codecs_jp.c	
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/_codecs_kr.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/_codecs_tw.c
-
 
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/_codecs_cn.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/_codecs_hk.c
@@ -446,7 +369,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_pickle.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Parser/pegen/pegen.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Parser/pegen/peg_api.c
 
-
     ${CMAKE_CURRENT_SOURCE_DIR}/Python/asdl.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Python/ast.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Python/ast_opt.c
@@ -505,7 +427,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_pickle.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Python/traceback.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Python/_warnings.c
 
-
     ${CMAKE_CURRENT_SOURCE_DIR}/builtin.c
 )
 
@@ -513,7 +434,7 @@ add_library(${PYTHON_LIB} STATIC ${SOURCES})
 
 set(DEFINITIONS Py_BUILD_CORE Py_BUILD_CORE_BUILTIN Py_NO_ENABLE_SHARED PYXIE_SKIP_GIL_CHECK USE_IGE)
 if(MSVC)
-	set(DEFINITIONS ${DEFINITIONS} PY3_DLLNAME="python3")
+    set(DEFINITIONS ${DEFINITIONS} PY3_DLLNAME="python3")
     if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
         set(DEFINITIONS ${DEFINITIONS} _AMD64_)
     else()
@@ -524,17 +445,16 @@ endif()
 target_compile_definitions(${PYTHON_LIB} PUBLIC ${DEFINITIONS})
 
 target_include_directories(${PYTHON_LIB} PUBLIC
-    ${IGE_LIBS}/pyxCore/include/pyxcore
-    ${IGE_LIBS}/igeCore/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/igeCore/include
     ${PYTHON_INCLUDE_DIRS}
     ${INCLUDES}
 )
 
 target_link_libraries(${PYTHON_LIB}
-	_decimal
+    _decimal
     _sqlite
     _ssl
-	_hashlib
+    _hashlib
     _socket
     _select
     _unicodedata
@@ -544,3 +464,31 @@ target_link_libraries(${PYTHON_LIB}
     _asyncio
     _zlib
 )
+
+# Install Targets
+file(GLOB_RECURSE PUBLIC_INCLUDE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/Include/*.h*")
+install(TARGETS
+    ${PYTHON_LIB}
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
+
+foreach(HEADER ${PUBLIC_INCLUDE_FILES})
+    file(RELATIVE_PATH HEADER_RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/Include/" "${HEADER}")
+    get_filename_component(DIR ${HEADER_RELATIVE} DIRECTORY)
+    install(FILES ${HEADER} DESTINATION include/${DIR})
+endforeach(HEADER HEADERS)
+
+if(DEFINED ANDROID_PLATFORM)
+    set(CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Android/pyconfig.h")
+elseif(IOS)
+    set(CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/IOS/pyconfig.h")
+elseif(APPLE)
+    set(CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Mac/pyconfig.h")
+else()
+    set(CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/PC/pyconfig.h")
+endif()
+
+install(FILES ${CONFIG_FILE} DESTINATION include)
+

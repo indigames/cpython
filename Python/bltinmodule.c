@@ -11,9 +11,14 @@
 
 // [IGE]: IGE Debug
 #ifdef USE_IGE
-#include "pyxieFile.h"
+    #ifdef _WIN32
+        extern void __declspec(dllexport) pyxie_printf(const char* format, ...);
+    #else
+        extern void pyxie_printf(const char* format, ...);
+    #endif
 #endif
 // [/IGE]
+
 
 _Py_IDENTIFIER(__builtins__);
 _Py_IDENTIFIER(__dict__);
@@ -1849,12 +1854,9 @@ builtin_print(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject 
 #ifdef USE_IGE 
     for (i = 0; i < nargs; i++) {
         if (i > 0) {
-            if (sep == NULL)
-                pyxiePrintf(" ");
-            else
-                pyxiePrintf((const char*)PyUnicode_DATA(sep));
+            pyxie_printf(sep != NULL ? PyUnicode_DATA(sep) : " ");
         }
-        pyxiePrintf((const char*)PyUnicode_DATA(args[i]));
+        pyxie_printf(args[i] != NULL && PyUnicode_Check(args[i]) ? PyUnicode_DATA(args[i]) : "");
     }
 #endif
 // [/IGE]

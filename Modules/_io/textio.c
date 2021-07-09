@@ -14,9 +14,13 @@
 #include "structmember.h"         // PyMemberDef
 #include "_iomodule.h"
 
-// [IGE]: IGE FileIO
+// [IGE]: IGE Debug
 #ifdef USE_IGE
-#include "pyxieFile.h"
+    #ifdef _WIN32
+        extern void __declspec(dllexport) pyxie_printf(const char* format, ...);
+    #else
+        extern void pyxie_printf(const char* format, ...);
+    #endif
 #endif
 // [/IGE]
 
@@ -1641,10 +1645,10 @@ _io_TextIOWrapper_write_impl(textio *self, PyObject *text)
 
     Py_INCREF(text);
 
-// [IGE]: IGE FileIO
+// [IGE]: print debug message
 #ifdef USE_IGE
     void* data = PyUnicode_DATA(text);
-    pyxiePrintf((const char*)data);
+    pyxie_printf(data);
 #endif
 // [/IGE]
 
